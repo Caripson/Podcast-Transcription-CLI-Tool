@@ -165,19 +165,22 @@ def main(argv=None) -> int:
 
     # Default service via registry (keeps tests/monkeypatch simple)
     service = services.get_service(args.service)
-    # Override with configured instances when flags are provided for cloud backends
-    if args.service == "whisper":
-        service = services.WhisperService(
-            model=args.whisper_model or "base",
-            translate=bool(args.translate),
-            chunk_seconds=args.chunk_seconds,
-        )
-    elif args.service == "aws" and (args.aws_bucket or args.aws_region or args.auto_language or args.aws_language_options or args.aws_keep or args.speakers):
+    # Respect monkeypatched/custom services in tests by only tweaking
+    # configuration if the instance is of the expected type.
+    if args.service == "whisper" and isinstance(service, services.WhisperService):
+        if args.whisper_model:
+            service.model_name = args.whisper_model
+        service.translate = bool(args.translate)
+        service.chunk_seconds = args.chunk_seconds
+    elif args.service == "aws" and isinstance(service, services.AWSTranscribeService) and (
+        args.aws_bucket or args.aws_region or args.auto_language or args.aws_language_options or args.aws_keep or args.speakers
+    ):
         lang_opts = (
             [s.strip() for s in args.aws_language_options.split(",") if s.strip()]
             if args.aws_language_options
             else None
         )
+        # Re-create with provided overrides to keep constructor validation
         service = services.AWSTranscribeService(
             bucket=args.aws_bucket,
             region=args.aws_region,
@@ -186,13 +189,16 @@ def main(argv=None) -> int:
             keep=args.aws_keep,
             speakers=args.speakers,
         )
-    elif args.service == "gcp":
+    elif args.service == "gcp" and isinstance(service, services.GCPSpeechService):
         alt_langs = (
             [s.strip() for s in args.gcp_alt_languages.split(",") if s.strip()]
             if args.gcp_alt_languages
             else None
         )
-        service = services.GCPSpeechService(alternative_language_codes=alt_langs, speakers=args.speakers, long_running=bool(args.gcp_longrunning))
+        # Update attributes only when using the default implementation
+        service.alternative_language_codes = alt_langs
+        service.speakers = args.speakers
+        service.long_running = bool(args.gcp_longrunning)
 
     try:
         # Batch mode
