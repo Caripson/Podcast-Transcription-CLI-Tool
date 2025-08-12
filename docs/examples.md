@@ -70,6 +70,32 @@ Requires Calibre's `ebook-convert` in PATH.
 
 Other Kindle formats supported: `mobi`, `azw`, `kfx`.
 
+## SRT/VTT with diarization
+
+```bash
+./Transcribe_podcast_to_text.sh \
+  --url ./examples/tone.wav \
+  --service aws \
+  --speakers 2 \
+  --format vtt \
+  --output transcript.vtt
+```
+
+## Batch mode
+
+```bash
+cat > list.txt <<EOF
+https://example.com/ep1.mp3
+https://example.com/ep2.mp3
+EOF
+
+./Transcribe_podcast_to_text.sh \
+  --service whisper \
+  --input-file list.txt \
+  --format md \
+  --output ./out_dir
+```
+
 ## PDF (embedded font for Unicode)
 
 ```bash

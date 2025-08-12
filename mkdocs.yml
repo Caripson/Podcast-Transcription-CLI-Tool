@@ -10,6 +10,7 @@ nav:
   - Services: services.md
   - Examples: examples.md
   - Themes: themes.md
+  - Troubleshooting: troubleshooting.md
 markdown_extensions:
   - admonition
   - toc:

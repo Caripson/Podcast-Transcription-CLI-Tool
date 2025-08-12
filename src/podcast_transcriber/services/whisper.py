@@ -1,12 +1,16 @@
 import shutil
-from typing import Optional
+from typing import Optional, List, Dict
 
 from .base import TranscriptionService
 
 
 class WhisperService(TranscriptionService):
-    def __init__(self, model: str = "base") -> None:
+    def __init__(self, model: str = "base", translate: bool = False, chunk_seconds: Optional[int] = None) -> None:
         self.model_name = model
+        self.translate = translate
+        self.chunk_seconds = chunk_seconds
+        self.last_segments: List[Dict] = []
+        self.last_words: List[Dict] = []
 
     def _check_dependencies(self) -> None:
         if not shutil.which("ffmpeg"):
@@ -27,7 +31,71 @@ class WhisperService(TranscriptionService):
         import whisper  # type: ignore
 
         model = whisper.load_model(self.model_name)
-        result = model.transcribe(audio_path, language=language)
-        text = result.get("text") or ""
-        return text.strip()
 
+        if self.chunk_seconds:
+            # Chunk with ffmpeg into temp dir and merge results with offsets
+            import tempfile, os, subprocess
+            from pathlib import Path
+            tempdir = tempfile.mkdtemp(prefix="wchunks_")
+            pat = os.path.join(tempdir, "chunk_%05d.wav")
+            # segment into fixed-length chunks
+            subprocess.run([
+                "ffmpeg","-y","-i", audio_path,
+                "-f","segment","-segment_time", str(int(self.chunk_seconds)),
+                "-c","copy", pat
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            text_parts = []
+            base_offset = 0.0
+            all_segments: List[Dict] = []
+            all_words: List[Dict] = []
+            for chunk in sorted(Path(tempdir).glob("chunk_*.wav")):
+                result = model.transcribe(str(chunk), language=language, task=("translate" if self.translate else None))
+                t = (result.get("text") or "").strip()
+                if t:
+                    text_parts.append(t)
+                for seg in result.get("segments", []) or []:
+                    all_segments.append({
+                        "start": float(seg.get("start", 0.0)) + base_offset,
+                        "end": float(seg.get("end", 0.0)) + base_offset,
+                        "text": str(seg.get("text", "")).strip(),
+                    })
+                    # word-level if present
+                    for w in seg.get("words", []) or []:
+                        all_words.append({
+                            "start": float(w.get("start", 0.0)) + base_offset,
+                            "end": float(w.get("end", 0.0)) + base_offset,
+                            "word": str(w.get("word", "")),
+                        })
+                base_offset += float(self.chunk_seconds)
+            # cleanup chunks
+            try:
+                for f in Path(tempdir).glob("*"):
+                    try: f.unlink()
+                    except Exception: pass
+                Path(tempdir).rmdir()
+            except Exception:
+                pass
+            self.last_segments = all_segments
+            self.last_words = all_words
+            return "\n\n".join(text_parts).strip()
+        else:
+            result = model.transcribe(audio_path, language=language, task=("translate" if self.translate else None))
+            text = (result.get("text") or "").strip()
+            # capture segments and words if present
+            segs = []
+            words = []
+            for seg in result.get("segments", []) or []:
+                segs.append({
+                    "start": float(seg.get("start", 0.0)),
+                    "end": float(seg.get("end", 0.0)),
+                    "text": str(seg.get("text", "")).strip(),
+                })
+                for w in seg.get("words", []) or []:
+                    words.append({
+                        "start": float(w.get("start", 0.0)),
+                        "end": float(w.get("end", 0.0)),
+                        "word": str(w.get("word", "")),
+                    })
+            self.last_segments = segs
+            self.last_words = words
+            return text

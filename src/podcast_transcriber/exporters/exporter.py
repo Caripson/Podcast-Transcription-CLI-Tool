@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-SUPPORTED_FORMATS = {"txt", "pdf", "epub", "mobi", "azw", "azw3", "kfx"}
+SUPPORTED_FORMATS = {"txt", "pdf", "epub", "mobi", "azw", "azw3", "kfx", "srt", "vtt", "json", "md"}
 
 
 def infer_format_from_path(path: Optional[str]) -> Optional[str]:
@@ -32,6 +32,14 @@ def export_transcript(
     pdf_page_size: str = "A4",
     pdf_orientation: str = "portrait",
     pdf_font_file: Optional[str] = None,
+    # Optional rich metadata for advanced formats
+    segments: Optional[list[dict]] = None,
+    words: Optional[list[dict]] = None,
+    # PDF/EPUB richness
+    pdf_header: Optional[str] = None,
+    pdf_footer: Optional[str] = None,
+    auto_toc: bool = False,
+    cover_image_bytes: Optional[bytes] = None,
 ) -> None:
     fmt = fmt.lower()
     if fmt not in SUPPORTED_FORMATS:
@@ -58,6 +66,9 @@ def export_transcript(
             orientation=pdf_orientation,
             first_page_cover_only=pdf_first_page_cover_only,
             font_file=pdf_font_file,
+            header_text=pdf_header,
+            footer_text=pdf_footer,
+            toc_segments=(segments if auto_toc else None),
         )
         return
 
@@ -68,9 +79,27 @@ def export_transcript(
             title=title,
             author=author,
             cover_image=cover_image,
+            cover_image_bytes=cover_image_bytes,
             css_file=epub_css_file,
             css_text=epub_css_text,
+            segments=segments,
         )
+        return
+
+    if fmt == "srt":
+        _export_srt(text, out_path, segments=segments)
+        return
+
+    if fmt == "vtt":
+        _export_vtt(text, out_path, segments=segments)
+        return
+
+    if fmt == "json":
+        _export_json(text, out_path, segments=segments, words=words, title=title, author=author)
+        return
+
+    if fmt == "md":
+        _export_md(text, out_path, title=title, author=author)
         return
 
     # Kindle family: convert via Calibre's ebook-convert from an EPUB
@@ -100,6 +129,9 @@ def _export_pdf(
     page_size: str = "A4",
     orientation: str = "portrait",
     font_file: Optional[str] = None,
+    header_text: Optional[str] = None,
+    footer_text: Optional[str] = None,
+    toc_segments: Optional[list[dict]] = None,
 ):
     try:
         from fpdf import FPDF  # type: ignore
@@ -110,7 +142,17 @@ def _export_pdf(
 
     orient_flag = "P" if str(orientation).lower().startswith("p") else "L"
     try:
-        pdf = FPDF(orientation=orient_flag, format=page_size)
+        class PDFDoc(FPDF):
+            def header(self_inner):
+                if header_text:
+                    self_inner.set_font("Arial", size=9)
+                    self_inner.cell(0, 8, header_text, 0, 1, "C")
+            def footer(self_inner):
+                if footer_text:
+                    self_inner.set_y(-12)
+                    self_inner.set_font("Arial", size=9)
+                    self_inner.cell(0, 10, f"{footer_text}  |  {self_inner.page_no()}", 0, 0, "C")
+        pdf = PDFDoc(orientation=orient_flag, format=page_size)
     except Exception:
         pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=margin)
@@ -174,6 +216,18 @@ def _export_pdf(
                 Path(tmp_cover).unlink(missing_ok=True)
             except Exception:
                 pass
+    # Auto TOC page when segments provided
+    if toc_segments:
+        pdf.add_page()
+        pdf.set_font(font, size=font_size + 2)
+        pdf.cell(0, 10, "Table of Contents", ln=1)
+        pdf.set_font(font, size=font_size)
+        for seg in toc_segments:
+            start = _format_timestamp(seg.get("start", 0.0))
+            spk = seg.get("speaker")
+            label = f"[{start}] {spk+': ' if spk else ''}{(seg.get('text','')[:60]).strip()}"
+            pdf.multi_cell(0, 6, label)
+
     # Basic wrapping: split on double newlines as paragraphs
     for para in text.split("\n\n"):
         for line in para.splitlines():
@@ -188,8 +242,10 @@ def _export_epub(
     title: Optional[str],
     author: Optional[str],
     cover_image: Optional[str] = None,
+    cover_image_bytes: Optional[bytes] = None,
     css_file: Optional[str] = None,
     css_text: Optional[str] = None,
+    segments: Optional[list[dict]] = None,
 ):
     try:
         from ebooklib import epub  # type: ignore
@@ -213,6 +269,8 @@ def _export_epub(
         except Exception:
             data = p.read_bytes()
         book.set_cover(p.name, data)
+    elif cover_image_bytes:
+        book.set_cover("cover.jpg", cover_image_bytes)
 
     # Simple HTML content with optional embedded CSS
     combined_css = css_text or None
@@ -233,14 +291,43 @@ def _export_epub(
         html_parts.append("<p>" + "<br/>".join(epub.escape_html(p) for p in para.splitlines()) + "</p>")
     html_parts.append("</body>")
     content = "\n".join(html_parts)
-    c = epub.EpubHtml(title="Transcript", file_name="transcript.xhtml", lang="en")
-    c.content = content
-    book.add_item(c)
-    book.toc = (epub.Link("transcript.xhtml", "Transcript", "transcript"),)
+    chapters = []
+    if segments:
+        # Split into small chapters by segments, every ~10 minutes or speaker changes
+        cur_html = [head, "<body>"]
+        cur_len = 0
+        cur_idx = 1
+        for seg in segments:
+            start = _format_timestamp(seg.get("start", 0.0))
+            spk = seg.get("speaker")
+            text_seg = seg.get("text", "")
+            cur_html.append(f"<h2 id='seg-{cur_idx}'>[{start}] {epub.escape_html(spk+': ' if spk else '')}</h2>")
+            cur_html.append("<p>" + epub.escape_html(text_seg) + "</p>")
+            cur_len += len(text_seg)
+            if cur_len > 4000:  # rough size threshold
+                ch = epub.EpubHtml(title=f"Section {cur_idx}", file_name=f"section_{cur_idx}.xhtml", lang="en")
+                ch.content = "\n".join(cur_html + ["</body>"])
+                book.add_item(ch)
+                chapters.append(ch)
+                cur_html = [head, "<body>"]
+                cur_len = 0
+                cur_idx += 1
+        if cur_html and len(cur_html) > 2:
+            ch = epub.EpubHtml(title=f"Section {cur_idx}", file_name=f"section_{cur_idx}.xhtml", lang="en")
+            ch.content = "\n".join(cur_html + ["</body>"])
+            book.add_item(ch)
+            chapters.append(ch)
+    else:
+        c = epub.EpubHtml(title="Transcript", file_name="transcript.xhtml", lang="en")
+        c.content = content
+        book.add_item(c)
+        chapters.append(c)
+
+    book.toc = tuple(chapters)
     book.add_item(epub.EpubNavi())
     book.add_item(epub.EpubNav())
     book.add_item(epub.EpubNCX())
-    book.spine = ["nav", c]
+    book.spine = ["nav", *chapters]
     epub.write_epub(out_path, book)
 
 
@@ -304,3 +391,96 @@ def _prepare_cover_bytes(path: Path) -> bytes:
         if not data:
             return path.read_bytes()
         return data
+
+
+def _format_timestamp(seconds: float) -> str:
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = int(seconds % 60)
+    ms = int((seconds - int(seconds)) * 1000)
+    return f"{h:02}:{m:02}:{s:02},{ms:03}"
+
+
+def _coalesce_segments(text: str, segments: Optional[list[dict]]) -> list[dict]:
+    if segments:
+        # ensure required keys
+        out = []
+        for seg in segments:
+            if "start" in seg and "end" in seg and "text" in seg:
+                out.append({
+                    "start": float(seg["start"]),
+                    "end": float(seg["end"]),
+                    "text": str(seg["text"]).strip(),
+                    "speaker": seg.get("speaker"),
+                })
+        if out:
+            return out
+    # Fallback: single segment covering unknown duration
+    return [{"start": 0.0, "end": 0.0, "text": text.strip()}]
+
+
+def _export_srt(text: str, out_path: str, segments: Optional[list[dict]] = None) -> None:
+    segs = _coalesce_segments(text, segments)
+    lines = []
+    for i, seg in enumerate(segs, start=1):
+        start = _format_timestamp(seg.get("start", 0.0))
+        end = _format_timestamp(seg.get("end", 0.0))
+        caption = seg.get("text", "").strip()
+        spk = seg.get("speaker")
+        if spk:
+            caption = f"{spk}: {caption}"
+        lines.append(str(i))
+        lines.append(f"{start} --> {end}")
+        lines.append(caption)
+        lines.append("")
+    Path(out_path).write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+
+
+def _export_vtt(text: str, out_path: str, segments: Optional[list[dict]] = None) -> None:
+    segs = _coalesce_segments(text, segments)
+    lines = ["WEBVTT", ""]
+    for seg in segs:
+        start = _format_timestamp(seg.get("start", 0.0)).replace(",", ".")
+        end = _format_timestamp(seg.get("end", 0.0)).replace(",", ".")
+        caption = seg.get("text", "").strip()
+        spk = seg.get("speaker")
+        if spk:
+            caption = f"{spk}: {caption}"
+        lines.append(f"{start} --> {end}")
+        lines.append(caption)
+        lines.append("")
+    Path(out_path).write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+
+
+def _export_json(
+    text: str,
+    out_path: str,
+    segments: Optional[list[dict]] = None,
+    words: Optional[list[dict]] = None,
+    title: Optional[str] = None,
+    author: Optional[str] = None,
+) -> None:
+    import json
+    payload = {
+        "title": title or "Transcript",
+        "author": author,
+        "text": text,
+        "segments": _coalesce_segments(text, segments),
+    }
+    if words:
+        payload["words"] = words
+    Path(out_path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _export_md(text: str, out_path: str, title: Optional[str], author: Optional[str]) -> None:
+    lines = []
+    if title:
+        lines.append(f"# {title}")
+        lines.append("")
+    if author:
+        lines.append(f"_by {author}_")
+        lines.append("")
+    for para in text.split("\n\n"):
+        lines.append(para.strip())
+        lines.append("")
+    Path(out_path).write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
