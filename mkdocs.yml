@@ -4,6 +4,7 @@ site_url: https://caripson.github.io/Podcast-Transcription-CLI-Tool
 repo_url: https://github.com/Caripson/Podcast-Transcription-CLI-Tool
 theme:
   name: material
+copyright: "Developed by Johan Caripson"
 nav:
   - Overview: index.md
   - Quickstart: usage.md

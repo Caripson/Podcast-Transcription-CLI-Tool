@@ -21,3 +21,7 @@ Transcribe podcasts and other audio from a URL or local file. Choose between loc
 - Post‑processing: `--normalize` (whitespace/paragraphs), `--summarize N` (naive summary).
 
 See Quickstart for usage details.
+
+### Author
+
+Developed by Johan Caripson.

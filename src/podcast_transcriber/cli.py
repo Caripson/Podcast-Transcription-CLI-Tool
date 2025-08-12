@@ -2,14 +2,31 @@ import argparse
 import sys
 from pathlib import Path
 
-from .utils.downloader import ensure_local_audio
 from . import services
+from .utils.downloader import ensure_local_audio
+
+try:  # Resolve package version for --version output
+    from importlib.metadata import version as _pkg_version  # py3.8+
+except Exception:  # pragma: no cover
+    _pkg_version = None  # type: ignore
 
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="podcast-transcriber",
         description="Transcribe a podcast audio from a URL or file using pluggable services.",
+    )
+    # Provide a rich --version that includes credits
+    ver = "dev"
+    if _pkg_version is not None:
+        try:
+            ver = _pkg_version("podcast-transcriber")
+        except Exception:
+            ver = "dev"
+    p.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {ver} — Developed by Johan Caripson",
     )
     p.add_argument("--url", required=True, help="Audio URL or local file path")
     p.add_argument(
@@ -52,6 +69,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--title", default=None, help="Document title metadata (for EPUB/PDF/Kindle)")
     p.add_argument("--author", default=None, help="Author metadata (for EPUB/PDF/Kindle)")
+    # Utility
+    p.add_argument("--credits", action="store_true", help="Show maintainer credits and exit")
     p.add_argument("--cover-image", default=None, help="Cover image path for EPUB/Kindle exports")
     p.add_argument("--auto-toc", action="store_true", help="Generate a simple TOC (PDF/EPUB) from segments if available")
     # Diarization
@@ -142,6 +161,12 @@ def _load_config(path: str) -> dict:
 
 
 def main(argv=None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+    # Early utility action before enforcing required args
+    if "--credits" in argv:
+        sys.stdout.write("Podcast Transcription CLI Tool — Developed by Johan Caripson\n")
+        return 0
     args = build_parser().parse_args(argv)
     # Config defaults
     if args.config:

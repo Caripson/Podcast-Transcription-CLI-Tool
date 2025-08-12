@@ -243,6 +243,10 @@ EOF
 - GitHub Actions runs `pytest` on push/PR (matrix across Python versions and optional extras).
 - MkDocs builds and publishes docs to GitHub Pages (see `.github/workflows/docs.yml`).
 
+## Author
+
+Developed by Johan Caripson.
+
 ## License
 
 MIT (see LICENSE)
@@ -284,3 +288,7 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/creds.json
 ```
 
 Kindle formats note: `--format mobi|azw|azw3|kfx` requires Calibre’s `ebook-convert` on PATH.
+
+Utility
+
+- `--credits`: Print maintainer credits and exit.
