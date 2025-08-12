@@ -2,8 +2,11 @@ name: Smoke
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
+  release:
+  workflow_dispatch:
 
 jobs:
   smoke:
