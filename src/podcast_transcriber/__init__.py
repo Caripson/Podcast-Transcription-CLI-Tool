@@ -1,10 +1,12 @@
+from typing import Optional
+
 try:
     from importlib.metadata import version as _pkg_version  # Python 3.8+
 except Exception:  # pragma: no cover
     _pkg_version = None  # type: ignore
 
 
-def _read_pyproject_version() -> str | None:
+def _read_pyproject_version() -> Optional[str]:
     try:
         # Prefer the version declared in the local pyproject.toml when running from source
         from pathlib import Path
