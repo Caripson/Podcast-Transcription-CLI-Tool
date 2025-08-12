@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "podcast-transcriber"
+version = "0.1.0"
+description = "CLI tool to transcribe podcasts from a URL using pluggable services (Whisper, AWS, GCP)."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Podcast Transcriber Maintainers" }]
+license = { text = "MIT" }
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+aws = ["boto3>=1.28.0"]
+gcp = ["google-cloud-speech>=2.24.0"]
+whisper = ["openai-whisper>=20231117"]
+docs = ["mkdocs>=1.5.0", "mkdocs-material>=9.1.0"]
+dev = ["pytest>=7.4.0"]
+export = ["fpdf2>=2.7.0", "ebooklib>=0.18", "Pillow>=9.5.0"]
+
+[project.scripts]
+podcast-transcriber = "podcast_transcriber.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

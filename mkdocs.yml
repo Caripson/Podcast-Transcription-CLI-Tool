@@ -1,0 +1,16 @@
+site_name: Podcast Transcription CLI Tool
+site_description: Transcribe podcasts from a URL with pluggable services.
+site_url: https://caripson.github.io/Podcast-Transcription-CLI-Tool
+repo_url: https://github.com/Caripson/Podcast-Transcription-CLI-Tool
+theme:
+  name: material
+nav:
+  - Overview: index.md
+  - Quickstart: usage.md
+  - Services: services.md
+  - Examples: examples.md
+  - Themes: themes.md
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true

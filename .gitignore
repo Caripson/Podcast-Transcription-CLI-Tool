@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# Editors
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Coverage
+.coverage
+htmlcov/
+
+# MkDocs
+site/
+

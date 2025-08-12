@@ -1,0 +1,12 @@
+/* Example theme CSS you can customize. Use with --epub-theme custom:/path/to/themes.css */
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.05em;
+  line-height: 1.6;
+  color: #222;
+}
+h1, h2, h3 { margin: 0.6em 0 0.3em; }
+p { margin: 0.7em 0; }
+a { color: #3366cc; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
