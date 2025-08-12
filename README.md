@@ -39,6 +39,23 @@ Badges
   - YouTube: `yt-dlp`
   - ID3 cover/title: `mutagen` (optional)
 
+Minimal core-only install (one-liner):
+
+```bash
+pip install -e .
+```
+
+Extras quick reference:
+
+| Feature | Extra | Install command | Notes |
+|---|---|---|---|
+| Whisper (local) | `whisper` | `pip install -e .[whisper]` | Requires `ffmpeg` on PATH |
+| AWS Transcribe | `aws` | `pip install -e .[aws]` | Needs AWS creds + `AWS_TRANSCRIBE_S3_BUCKET` |
+| GCP Speech-to-Text | `gcp` | `pip install -e .[gcp]` | Needs `GOOGLE_APPLICATION_CREDENTIALS` |
+| Export formats (PDF/EPUB/Kindle) | `export` | `pip install -e .[export]` | Kindle formats require Calibre `ebook-convert` |
+| Developer tools | `dev` | `pip install -e .[dev]` | Includes pytest, etc. |
+| Docs | `docs` | `pip install -e .[docs]` | MkDocs + Material |
+
 ## Installation
 
 Local (editable) install for development:
@@ -60,13 +77,15 @@ pip install -e .[export]
 
 ## Quickstart
 
-Run via Bash wrapper (works without installing):
+Run via Bash wrapper from source (no package install of this project required):
+
+Note: You still need Python dependencies available in your environment. At minimum, core runs require `requests`. For Whisper/AWS/GCP backends or exports, install the corresponding extras. See Installation below.
 
 ```bash
 ./Transcribe_podcast_to_text.sh --url "https://example.com/audio.mp3" --service whisper --output out.txt
 ```
 
-Run via Python module or console entrypoint:
+Run via Python module or console entrypoint (requires installing the package and its deps):
 
 ```bash
 python -m podcast_transcriber --url <URL|path> --service <whisper|aws|gcp> --output out.txt

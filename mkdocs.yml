@@ -8,6 +8,7 @@ copyright: "Developed by Johan Caripson"
 nav:
   - Overview: index.md
   - Quickstart: usage.md
+  - Dependencies: dependencies.md
   - Services: services.md
   - Interactive: interactive.md
   - Plugins: plugins.md

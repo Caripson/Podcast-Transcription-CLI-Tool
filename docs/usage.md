@@ -1,5 +1,7 @@
 # 🚀 Quickstart
 
+Before running, ensure dependencies are installed. See [Dependencies & Extras](dependencies.md) for core and optional installs.
+
 Run via the Bash script:
 
 ```bash

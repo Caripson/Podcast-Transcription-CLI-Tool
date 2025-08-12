@@ -4,7 +4,18 @@ import tempfile
 from pathlib import Path
 from typing import Union
 
-import requests
+# 'requests' is a core dependency but import it lazily so the CLI can start
+def _require_requests():
+    try:
+        import requests  # type: ignore
+        return requests
+    except Exception as e:  # pragma: no cover
+        raise RuntimeError(
+            "Python package 'requests' is required for downloading URLs.\n"
+            "Install project dependencies, e.g.:\n"
+            "  python -m venv .venv && source .venv/bin/activate && pip install -e .\n"
+            "Or: pip install requests"
+        ) from e
 import subprocess
 from urllib.parse import urlparse
 import shutil
@@ -40,7 +51,7 @@ def _http_get(url: str, **kwargs):
     last_exc = None
     for i in range(retries):
         try:
-            return requests.get(url, **kwargs)
+            return _require_requests().get(url, **kwargs)
         except Exception as e:
             last_exc = e
             if i == retries - 1:
@@ -108,7 +119,7 @@ def ensure_local_audio(source: Union[str, os.PathLike]) -> str:
         if s.endswith('.xml') or 'rss' in s.lower() or 'feed' in s.lower():
             try:
                 import xml.etree.ElementTree as ET
-                r = requests.get(s, timeout=30)
+                r = _require_requests().get(s, timeout=30)
                 r.raise_for_status()
                 root = ET.fromstring(r.text)
                 # Try common namespaces

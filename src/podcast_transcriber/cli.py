@@ -272,12 +272,12 @@ def main(argv=None) -> int:
     service = services.get_service(args.service)
     # Respect monkeypatched/custom services in tests by only tweaking
     # configuration if the instance is of the expected type.
-    if args.service == "whisper" and isinstance(service, services.WhisperService):
+    if args.service == "whisper" and getattr(services, "WhisperService", None) is not None and isinstance(service, services.WhisperService):
         if args.whisper_model:
             service.model_name = args.whisper_model
         service.translate = bool(args.translate)
         service.chunk_seconds = args.chunk_seconds
-    elif args.service == "aws" and isinstance(service, services.AWSTranscribeService) and (
+    elif args.service == "aws" and getattr(services, "AWSTranscribeService", None) is not None and isinstance(service, services.AWSTranscribeService) and (
         args.aws_bucket or args.aws_region or args.auto_language or args.aws_language_options or args.aws_keep or args.speakers
     ):
         lang_opts = (
@@ -294,7 +294,7 @@ def main(argv=None) -> int:
             keep=args.aws_keep,
             speakers=args.speakers,
         )
-    elif args.service == "gcp" and isinstance(service, services.GCPSpeechService):
+    elif args.service == "gcp" and getattr(services, "GCPSpeechService", None) is not None and isinstance(service, services.GCPSpeechService):
         alt_langs = (
             [s.strip() for s in args.gcp_alt_languages.split(",") if s.strip()]
             if args.gcp_alt_languages
