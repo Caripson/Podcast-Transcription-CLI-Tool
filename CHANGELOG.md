@@ -13,3 +13,9 @@ All notable changes to this project are documented here.
 - Downloader: HTTP retry/backoff and simple progress indicator with `--verbose`.
 - AWS: Cleans up S3 input object unless `--aws-keep`.
 - Docs: README overhaul; MkDocs usage/services/examples updated; Troubleshooting page added.
+
+## [1.2.0] - 2025-08-12
+- Config: Auto-discovery of default config at `$XDG_CONFIG_HOME/podcast-transcriber/config.toml` or `~/.config/podcast-transcriber/config.toml` (overridden by `--config`).
+- Export(JSON): Includes downloader metadata (`source` block) such as original URL, local path, ID3 title/artist, yt-dlp title/uploader, and cover URL when available.
+- CLI: Added `--interactive` guided mode that prompts for URL, service, format, output, and language.
+- Plugins: Introduced formal plugin architecture for services using entry points under `podcast_transcriber.services`. Built-ins are also exposed via entry points.

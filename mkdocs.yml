@@ -9,6 +9,8 @@ nav:
   - Overview: index.md
   - Quickstart: usage.md
   - Services: services.md
+  - Interactive: interactive.md
+  - Plugins: plugins.md
   - Examples: examples.md
   - Themes: themes.md
   - Troubleshooting: troubleshooting.md

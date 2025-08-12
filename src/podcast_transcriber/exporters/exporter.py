@@ -35,6 +35,7 @@ def export_transcript(
     # Optional rich metadata for advanced formats
     segments: Optional[list[dict]] = None,
     words: Optional[list[dict]] = None,
+    metadata: Optional[dict] = None,
     # PDF/EPUB richness
     pdf_header: Optional[str] = None,
     pdf_footer: Optional[str] = None,
@@ -95,7 +96,7 @@ def export_transcript(
         return
 
     if fmt == "json":
-        _export_json(text, out_path, segments=segments, words=words, title=title, author=author)
+        _export_json(text, out_path, segments=segments, words=words, title=title, author=author, metadata=metadata)
         return
 
     if fmt == "md":
@@ -459,6 +460,7 @@ def _export_json(
     words: Optional[list[dict]] = None,
     title: Optional[str] = None,
     author: Optional[str] = None,
+    metadata: Optional[dict] = None,
 ) -> None:
     import json
     payload = {
@@ -469,6 +471,8 @@ def _export_json(
     }
     if words:
         payload["words"] = words
+    if metadata:
+        payload["source"] = metadata
     Path(out_path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 

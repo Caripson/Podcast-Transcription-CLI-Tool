@@ -84,13 +84,17 @@ Required
 Input and batch
 
 - `--input-file list.txt`: Process many items (one per line). Requires `--output` to be a directory.
-- `--config config.toml`: Provide defaults (e.g., `language`, `format`, `title`, etc.).
+- `--config config.toml`: Provide defaults (e.g., `language`, `format`, `title`, etc.). If omitted, a config is auto-discovered at `~/.config/podcast-transcriber/config.toml` (or `$XDG_CONFIG_HOME/podcast-transcriber/config.toml`).
 
 Output and formats
 
 - `--output`: Output path (or directory for batch); defaults to stdout for `txt`.
 - `--format`: `txt`, `pdf`, `epub`, `mobi`, `azw`, `azw3`, `kfx`, `srt`, `vtt`, `json`, `md`.
 - `--title`, `--author`: Document metadata.
+
+Interactive mode
+
+- `--interactive`: Guided prompts for `--url`, `--service`, `--format`, `--output`, and optional `--language`. Great for first-time users.
 
 Whisper options
 
@@ -218,6 +222,47 @@ EOF
 - YouTube extraction requires `yt-dlp`; otherwise HTTP fallback is used.
 - ID3 metadata (title/cover) is read when `mutagen` is installed; RSS feeds use the first `<enclosure>` URL.
 - AWS/GCP calls are not made during tests; unit tests mock external services.
+
+## Example Plugin + Smoke Test
+
+- Example plugin: `examples/plugin_echo/` registers an `echo` service via entry points. Install with `pip install -e examples/plugin_echo` and use `--service echo`.
+- Smoke test script: `scripts/smoke.sh` automates a basic run including plugin discovery and JSON export. Make it executable and run:
+
+```
+chmod +x scripts/smoke.sh
+./scripts/smoke.sh
+```
+
+## JSON Export Schema
+
+When using `--format json`, the file includes additional metadata when available from the downloader (ID3, yt-dlp, etc.).
+
+- Keys:
+  - `title`: Document title.
+  - `author`: Document author (if provided).
+  - `text`: Full transcript.
+  - `segments`: List of coalesced segments with `start`, `end`, `text`, and optional `speaker`.
+  - `words`: Optional word-level timings when the backend provides them.
+  - `source`: Optional object with downloader metadata, for example:
+    - `source_url`: Original URL.
+    - `local_path`: Local file path used for transcription.
+    - `id3_title`, `id3_artist`: From ID3 tags if present.
+    - `source_title`: From yt-dlp (e.g., video title).
+    - `source_uploader`: From yt-dlp (e.g., channel/uploader).
+    - `cover_url`: Thumbnail URL when available.
+
+## Plugins: Add Your Own Service
+
+You can ship third-party services as plugins via Python entry points. Register the entry point group `podcast_transcriber.services` in your package and expose either a subclass of `TranscriptionService` or a zero-argument factory that returns one.
+
+pyproject.toml (in your plugin):
+
+```
+[project.entry-points."podcast_transcriber.services"]
+myservice = "my_package.my_module:MyService"
+```
+
+Your service must implement the `TranscriptionService` interface (see `src/podcast_transcriber/services/base.py`). Once installed, it appears in `--service` choices and in `--interactive` selection.
 - Troubleshooting: see `docs/troubleshooting.md` for common issues and fixes.
 
 ### Quick Troubleshooting

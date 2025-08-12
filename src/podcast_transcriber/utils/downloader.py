@@ -82,6 +82,7 @@ def ensure_local_audio(source: Union[str, os.PathLike]) -> str:
                         data = json.loads(out.decode("utf-8", errors="ignore"))
                         info_title = data.get("title")
                         info_thumb = data.get("thumbnail")
+                        info_uploader = data.get("uploader")
                     except Exception:
                         pass
                     subprocess.run([
@@ -92,6 +93,11 @@ def ensure_local_audio(source: Union[str, os.PathLike]) -> str:
                         setattr(lp, "source_title", info_title)
                     if info_thumb:
                         setattr(lp, "cover_url", info_thumb)
+                    try:
+                        if info_uploader:
+                            setattr(lp, "source_uploader", info_uploader)
+                    except Exception:
+                        pass
                     return lp
                 except Exception:
                     try: Path(tmp_path).unlink(missing_ok=True)

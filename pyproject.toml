@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "podcast-transcriber"
-version = "1.1.0"
+version = "1.2.0"
 description = "CLI tool to transcribe podcasts from a URL using pluggable services (Whisper, AWS, GCP)."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -29,6 +29,11 @@ export = ["fpdf2>=2.7.0", "ebooklib>=0.18", "Pillow>=9.5.0"]
 
 [project.scripts]
 podcast-transcriber = "podcast_transcriber.cli:main"
+
+[project.entry-points."podcast_transcriber.services"]
+whisper = "podcast_transcriber.services:WhisperService"
+aws = "podcast_transcriber.services:AWSTranscribeService"
+gcp = "podcast_transcriber.services:GCPSpeechService"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

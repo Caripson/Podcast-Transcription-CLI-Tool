@@ -29,4 +29,10 @@ The tool supports multiple transcription services behind a common interface.
 
 ## ➕ Add a new service
 
-Implement `TranscriptionService` and register it in `services.__init__.get_service`.
+Prefer plugins via entry points so new services can ship as separate packages without modifying this repo.
+
+- See: Plugins guide (`plugins.md`) and the example plugin at `examples/plugin_echo/`.
+- Quick start:
+  - Implement `TranscriptionService` in your package.
+  - Register an entry point under `podcast_transcriber.services`.
+  - Install your package; it will appear as a valid `--service` value and in interactive mode.
