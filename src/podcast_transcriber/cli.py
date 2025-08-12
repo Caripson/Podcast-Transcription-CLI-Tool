@@ -4,11 +4,7 @@ from pathlib import Path
 
 from . import services
 from .utils.downloader import ensure_local_audio
-
-try:  # Resolve package version for --version output
-    from importlib.metadata import version as _pkg_version  # py3.8+
-except Exception:  # pragma: no cover
-    _pkg_version = None  # type: ignore
+from . import __version__, __credits__
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -17,16 +13,11 @@ def build_parser() -> argparse.ArgumentParser:
         description="Transcribe a podcast audio from a URL or file using pluggable services.",
     )
     # Provide a rich --version that includes credits
-    ver = "dev"
-    if _pkg_version is not None:
-        try:
-            ver = _pkg_version("podcast-transcriber")
-        except Exception:
-            ver = "dev"
+    ver = __version__
     p.add_argument(
         "--version",
         action="version",
-        version=f"%(prog)s {ver} — Developed by Johan Caripson",
+        version=f"%(prog)s {ver} — {__credits__}",
     )
     # URL/File may be provided interactively; not required here
     p.add_argument("--url", default=None, help="Audio URL or local file path")
