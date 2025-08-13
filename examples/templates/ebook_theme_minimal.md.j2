@@ -1,0 +1,15 @@
+{% extends "../../src/podcast_transcriber/templates/ebook.md.j2" %}
+
+{% block front_matter %}
+---
+title: {{ title }}
+author: {{ author }}
+---
+{% endblock %}
+
+{% block preface %}
+{% if summary %}
+> {{ summary }}
+{% endif %}
+{% endblock %}
+

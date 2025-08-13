@@ -61,6 +61,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--title", default=None, help="Document title metadata (for EPUB/PDF/Kindle)")
     p.add_argument("--author", default=None, help="Author metadata (for EPUB/PDF/Kindle)")
+    # KDP-oriented metadata
+    p.add_argument("--subtitle", default=None, help="Subtitle (KDP/EPUB metadata)")
+    p.add_argument("--description", default=None, help="Long description/blurb (KDP/EPUB metadata)")
+    p.add_argument("--keywords", default=None, help="Comma-separated keywords (KDP/EPUB metadata)")
+    p.add_argument("--series-title", default=None, help="Series title (KDP metadata)")
+    p.add_argument("--volume-number", type=str, default=None, help="Series volume number (KDP metadata)")
     # Utility
     p.add_argument("--credits", action="store_true", help="Show maintainer credits and exit")
     p.add_argument("--cover-image", default=None, help="Cover image path for EPUB/Kindle exports")
@@ -72,8 +78,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--translate", action="store_true", help="Use Whisper translate task (to English)")
     # Batch and config
     p.add_argument("--input-file", default=None, help="Path to a text file with URLs/paths to process one per line")
+    p.add_argument("--combine-into", default=None, help="Combine all inputs into a single book at this output path (requires --input-file)")
     p.add_argument("--config", default=None, help="Path to a TOML config file with default arguments (auto-discovers in ~/.config/podcast-transcriber/config.toml)")
     p.add_argument("--interactive", action="store_true", help="Interactive mode: guided prompts for common options")
+    p.add_argument("--kdp", action="store_true", help="Enable KDP pipeline defaults (normalize, EPUB with TOC, metadata)")
     p.add_argument("--verbose", action="store_true", help="Verbose output")
     p.add_argument("--quiet", action="store_true", help="Suppress non-error output")
     # Post-processing
@@ -183,14 +191,14 @@ def _interactive_fill_args(args: argparse.Namespace) -> None:
         return val or (default or "")
 
     if not args.url:
-        args.url = _inp("Vilken fil/URL vill du transkribera?")
+        args.url = _inp("Which file/URL do you want to transcribe?")
     # Choose service
     available = services.list_service_names()
     if not args.service or args.service not in available:
-        print("Tillgängliga tjänster:")
+        print("Available services:")
         for i, name in enumerate(available, start=1):
             print(f"  {i}. {name}")
-        sel = _inp("Vilken tjänst vill du använda? (namn eller nummer)")
+        sel = _inp("Which service do you want to use? (name or number)")
         try:
             idx = int(sel)
             if 1 <= idx <= len(available):
@@ -201,19 +209,19 @@ def _interactive_fill_args(args: argparse.Namespace) -> None:
     # Format
     from .exporters.exporter import SUPPORTED_FORMATS
     if not args.format:
-        print(f"Tillgängliga format: {', '.join(sorted(SUPPORTED_FORMATS))}")
-        args.format = _inp("Vilket output-format vill du ha?", default="txt")
+        print(f"Available formats: {', '.join(sorted(SUPPORTED_FORMATS))}")
+        args.format = _inp("Which output format do you want?", default="txt")
         if args.format not in SUPPORTED_FORMATS:
             print("Okänt format, använder 'txt'.")
             args.format = "txt"
     # Output path
     if args.format != "txt" and not args.output:
-        args.output = _inp("Sökväg till outputfil? (krävs för icke-txt)")
+        args.output = _inp("Output file path? (required for non-txt)")
     elif args.format == "txt" and not args.output:
-        args.output = _inp("Sökväg till outputfil? (tomt = skriv till stdout)", default="") or None
+        args.output = _inp("Output file path? (empty = write to stdout)", default="") or None
     # Language optional
     if not args.language:
-        lang = _inp("Språkkod? (t.ex. sv, en-US)", default="")
+        lang = _inp("Language code? (e.g., sv, en-US)", default="")
         args.language = lang or None
 
 
@@ -235,7 +243,7 @@ def main(argv=None) -> int:
         # Only fill missing simple scalars
         for key in [
             "language","aws_bucket","aws_region","aws_language_options","gcp_alt_languages",
-            "format","title","author","cover_image","epub_css_file","epub_theme",
+            "format","title","subtitle","author","description","keywords","cover_image","epub_css_file","epub_theme","series_title","volume_number",
             "whisper_model","chunk_seconds","translate","speakers","aws_keep",
         ]:
             if getattr(args, key.replace("-","_"), None) in (None, False):
@@ -256,6 +264,13 @@ def main(argv=None) -> int:
     if args.verbose:
         import os as _os
         _os.environ["PODCAST_TRANSCRIBER_VERBOSE"] = "1"
+
+    # KDP pipeline defaults
+    if args.kdp:
+        if not args.format:
+            args.format = "epub"
+        args.normalize = True if not getattr(args, "normalize", False) else args.normalize
+        args.auto_toc = True if not getattr(args, "auto_toc", False) else args.auto_toc
     # Resolve local path (download if URL)
     local_path = ensure_local_audio(args.url)
 
@@ -299,40 +314,92 @@ def main(argv=None) -> int:
     try:
         # Batch mode
         if args.input_file:
-            from .exporters import export_transcript
+            from .exporters import export_transcript, export_book, infer_format_from_path
             srcs = [s.strip() for s in Path(args.input_file).read_text(encoding="utf-8").splitlines() if s.strip()]
-            if not args.output:
-                raise SystemExit("--output directory is required for --input-file batch mode")
-            out_dir = Path(args.output)
-            out_dir.mkdir(parents=True, exist_ok=True)
-            for src in srcs:
-                lp = ensure_local_audio(src)
-                txt = service.transcribe(lp, language=args.language)
-                segs = getattr(service, "last_segments", None)
-                words = getattr(service, "last_words", None)
-                name = Path(src).stem or "item"
-                fmt = args.format or infer_format_from_path(str(args.output)) or "txt"
-                out_path = out_dir / f"{name}.{fmt}"
-                export_transcript(
-                    txt,
-                    str(out_path),
+            # Combine all into a single book
+            if args.combine_into:
+                chapters = []
+                cover_bytes = None
+                for src in srcs:
+                    lp = ensure_local_audio(src)
+                    txt = service.transcribe(lp, language=args.language)
+                    if args.normalize:
+                        from .utils.textproc import normalize_text as _norm
+                        txt = _norm(txt)
+                    # Title for chapter
+                    ch_title = getattr(lp, "id3_title", None) or getattr(lp, "source_title", None) or Path(src).stem
+                    chapters.append({"title": ch_title, "text": txt})
+                    if not args.cover_image and cover_bytes is None:
+                        cover_bytes = getattr(lp, "cover_image_bytes", None)
+                        if not cover_bytes:
+                            cover_url = getattr(lp, "cover_url", None)
+                            if cover_url:
+                                try:
+                                    import requests as _rq
+                                    r = _rq.get(cover_url, timeout=20)
+                                    r.raise_for_status()
+                                    cover_bytes = r.content
+                                except Exception:
+                                    cover_bytes = None
+                # Determine format from target path
+                fmt = args.format or infer_format_from_path(args.combine_into) or "epub"
+                # Build metadata payload suitable for EPUB/KDP
+                md = {
+                    "language": args.language,
+                    "description": args.description,
+                    "keywords": [s.strip() for s in (args.keywords or '').split(',') if s.strip()] or None,
+                    "series_title": args.series_title,
+                    "volume_number": args.volume_number,
+                    "subtitle": args.subtitle,
+                }
+                export_book(
+                    chapters,
+                    args.combine_into,
                     fmt,
                     title=args.title,
                     author=args.author,
                     cover_image=args.cover_image,
-                    pdf_font=args.pdf_font,
-                    pdf_font_size=args.pdf_font_size,
-                    pdf_margin=args.pdf_margin,
-                    pdf_page_size=args.pdf_page_size,
-                    pdf_orientation=args.pdf_orientation,
-                    pdf_font_file=args.pdf_font_file,
+                    cover_image_bytes=cover_bytes,
+                    metadata=md,
                     epub_css_file=args.epub_css_file,
                     epub_css_text=None,
-                    pdf_cover_fullpage=args.pdf_cover_fullpage,
-                    pdf_first_page_cover_only=args.pdf_first_page_cover_only,
-                    segments=segs,
-                    words=words,
                 )
+            else:
+                if not args.output:
+                    raise SystemExit("--output directory is required for --input-file batch mode (or use --combine-into)")
+                out_dir = Path(args.output)
+                out_dir.mkdir(parents=True, exist_ok=True)
+                for src in srcs:
+                    lp = ensure_local_audio(src)
+                    txt = service.transcribe(lp, language=args.language)
+                    segs = getattr(service, "last_segments", None)
+                    words = getattr(service, "last_words", None)
+                    if args.normalize:
+                        from .utils.textproc import normalize_text as _norm
+                        txt = _norm(txt)
+                    name = Path(src).stem or "item"
+                    fmt = args.format or infer_format_from_path(str(args.output)) or "txt"
+                    out_path = out_dir / f"{name}.{fmt}"
+                    export_transcript(
+                        txt,
+                        str(out_path),
+                        fmt,
+                        title=args.title,
+                        author=args.author,
+                        cover_image=args.cover_image,
+                        pdf_font=args.pdf_font,
+                        pdf_font_size=args.pdf_font_size,
+                        pdf_margin=args.pdf_margin,
+                        pdf_page_size=args.pdf_page_size,
+                        pdf_orientation=args.pdf_orientation,
+                        pdf_font_file=args.pdf_font_file,
+                        epub_css_file=args.epub_css_file,
+                        epub_css_text=None,
+                        pdf_cover_fullpage=args.pdf_cover_fullpage,
+                        pdf_first_page_cover_only=args.pdf_first_page_cover_only,
+                        segments=segs,
+                        words=words,
+                    )
             return 0
 
         # Simple cache lookup for single-file mode
@@ -411,7 +478,7 @@ def main(argv=None) -> int:
                 theme_css = get_theme_css(args.epub_theme)
         segs = getattr(service, "last_segments", None)
         words = getattr(service, "last_words", None)
-        # Collect source/download metadata for JSON export
+        # Collect source/download metadata for JSON/EPUB export
         meta = {
             "source_url": args.url,
             "local_path": str(local_path),
@@ -420,6 +487,19 @@ def main(argv=None) -> int:
             val = getattr(local_path, attr, None)
             if val:
                 meta[attr] = val
+        # KDP/EPUB metadata
+        if args.language:
+            meta["language"] = args.language
+        if args.description:
+            meta["description"] = args.description
+        if args.keywords:
+            meta["keywords"] = [s.strip() for s in args.keywords.split(',') if s.strip()]
+        if args.subtitle:
+            meta["subtitle"] = args.subtitle
+        if args.series_title:
+            meta["series_title"] = args.series_title
+        if args.volume_number:
+            meta["volume_number"] = args.volume_number
         # Auto-fill metadata: title/cover
         eff_title = args.title
         cover_bytes = None

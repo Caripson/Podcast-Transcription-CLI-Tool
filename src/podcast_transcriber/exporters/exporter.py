@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-SUPPORTED_FORMATS = {"txt", "pdf", "epub", "mobi", "azw", "azw3", "kfx", "srt", "vtt", "json", "md"}
+SUPPORTED_FORMATS = {"txt", "pdf", "epub", "mobi", "azw", "azw3", "kfx", "srt", "vtt", "json", "md", "docx"}
 
 
 def infer_format_from_path(path: Optional[str]) -> Optional[str]:
@@ -84,6 +84,7 @@ def export_transcript(
             css_file=epub_css_file,
             css_text=epub_css_text,
             segments=segments,
+            metadata=metadata,
         )
         return
 
@@ -101,6 +102,17 @@ def export_transcript(
 
     if fmt == "md":
         _export_md(text, out_path, title=title, author=author)
+        return
+
+    if fmt == "docx":
+        _export_docx(
+            text,
+            out_path,
+            title=title,
+            author=author,
+            cover_image=cover_image,
+            cover_image_bytes=cover_image_bytes,
+        )
         return
 
     # Kindle family: convert via Calibre's ebook-convert from an EPUB
@@ -247,6 +259,7 @@ def _export_epub(
     css_file: Optional[str] = None,
     css_text: Optional[str] = None,
     segments: Optional[list[dict]] = None,
+    metadata: Optional[dict] = None,
 ):
     try:
         from ebooklib import epub  # type: ignore
@@ -259,6 +272,35 @@ def _export_epub(
     book.set_title(title or "Transcript")
     if author:
         book.add_author(author)
+    # Basic metadata helpful for KDP ingestion
+    try:
+        lang = None
+        if metadata and isinstance(metadata, dict):
+            lang = metadata.get("language") or metadata.get("lang")
+            desc = metadata.get("description")
+            subj = metadata.get("keywords") or metadata.get("subjects")
+            if lang:
+                try:
+                    book.set_language(lang)
+                except Exception:
+                    pass
+            if desc:
+                try:
+                    book.add_metadata("DC", "description", str(desc))
+                except Exception:
+                    pass
+            if subj:
+                try:
+                    # join list/tuple or accept string
+                    if isinstance(subj, (list, tuple)):
+                        subj_val = ", ".join(map(str, subj))
+                    else:
+                        subj_val = str(subj)
+                    book.add_metadata("DC", "subject", subj_val)
+                except Exception:
+                    pass
+    except Exception:
+        pass
     if cover_image:
         p = Path(cover_image)
         if not p.exists():
@@ -330,6 +372,246 @@ def _export_epub(
     book.add_item(epub.EpubNCX())
     book.spine = ["nav", *chapters]
     epub.write_epub(out_path, book)
+
+
+def _export_docx(
+    text: str,
+    out_path: str,
+    title: Optional[str],
+    author: Optional[str],
+    cover_image: Optional[str] = None,
+    cover_image_bytes: Optional[bytes] = None,
+) -> None:
+    try:
+        import docx  # type: ignore
+        from docx.shared import Inches  # type: ignore
+    except Exception as e:
+        raise RuntimeError(
+            "DOCX export requires 'python-docx'. Install with: pip install python-docx or pip install podcast-transcriber[docx]"
+        ) from e
+    doc = docx.Document()
+    if title:
+        h = doc.add_heading(title, level=0)
+    if author:
+        p = doc.add_paragraph()
+        run = p.add_run(author)
+        run.italic = True
+    # Cover support: either file path or raw bytes written to a temp file
+    if cover_image or cover_image_bytes:
+        tmp_path = None
+        try:
+            if cover_image:
+                p = Path(cover_image)
+                if p.exists():
+                    tmp_path = str(p)
+            elif cover_image_bytes:
+                fd, tmp = tempfile.mkstemp(prefix="cover_", suffix=".jpg")
+                os.close(fd)
+                Path(tmp).write_bytes(cover_image_bytes)  # type: ignore[arg-type]
+                tmp_path = tmp
+            if tmp_path:
+                # Place cover on its own page
+                doc.add_page_break()
+                try:
+                    doc.add_picture(tmp_path, width=Inches(6))
+                    doc.add_page_break()
+                except Exception:
+                    pass
+        finally:
+            if cover_image_bytes and tmp_path:
+                try:
+                    Path(tmp_path).unlink(missing_ok=True)
+                except Exception:
+                    pass
+    # Body
+    for para in text.split("\n\n"):
+        doc.add_paragraph(para.strip())
+        doc.add_paragraph("")
+    doc.save(out_path)
+
+
+def export_book(
+    chapters: list[dict],
+    out_path: str,
+    fmt: str,
+    title: Optional[str] = None,
+    author: Optional[str] = None,
+    cover_image: Optional[str] = None,
+    cover_image_bytes: Optional[bytes] = None,
+    metadata: Optional[dict] = None,
+    epub_css_file: Optional[str] = None,
+    epub_css_text: Optional[str] = None,
+) -> None:
+    """Export a multi-chapter book.
+
+    chapters: list of {"title": str, "text": str}
+    fmt: one of epub, docx, md, txt, pdf (basic)
+    """
+    fmt = fmt.lower()
+    if fmt == "epub":
+        try:
+            from ebooklib import epub  # type: ignore
+        except Exception as e:
+            raise RuntimeError("EPUB export requires 'ebooklib'. Install with: pip install ebooklib") from e
+        book = epub.EpubBook()
+        book.set_title(title or "Podcast Book")
+        if author:
+            book.add_author(author)
+        if metadata and isinstance(metadata, dict):
+            try:
+                lang = metadata.get("language") or metadata.get("lang")
+                if lang:
+                    book.set_language(lang)
+                desc = metadata.get("description")
+                if desc:
+                    book.add_metadata("DC", "description", str(desc))
+                subj = metadata.get("keywords") or metadata.get("subjects")
+                if subj:
+                    if isinstance(subj, (list, tuple)):
+                        subj_val = ", ".join(map(str, subj))
+                    else:
+                        subj_val = str(subj)
+                    book.add_metadata("DC", "subject", subj_val)
+            except Exception:
+                pass
+        # Cover
+        if cover_image:
+            p = Path(cover_image)
+            if p.exists():
+                try:
+                    data = _prepare_cover_bytes(p)
+                except Exception:
+                    data = p.read_bytes()
+                book.set_cover(p.name, data)
+        elif cover_image_bytes:
+            book.set_cover("cover.jpg", cover_image_bytes)
+        # CSS
+        combined_css = epub_css_text or None
+        if epub_css_file:
+            css_path = Path(epub_css_file)
+            if not css_path.exists():
+                raise FileNotFoundError(f"EPUB CSS file not found: {epub_css_file}")
+            css_from_file = css_path.read_text(encoding="utf-8")
+            combined_css = (combined_css or "") + css_from_file
+        head = (
+            "<head><meta charset='utf-8'/>"
+            + (f"<style>{epub.escape_html(combined_css)}</style>" if combined_css else "")
+            + "</head>"
+        )
+        epub_chapters = []
+        for idx, ch in enumerate(chapters, start=1):
+            node = epub.EpubHtml(title=str(ch.get("title") or f"Chapter {idx}"), file_name=f"chapter_{idx}.xhtml", lang="en")
+            parts = [head, "<body>", f"<h1>{epub.escape_html(str(ch.get('title') or f'Chapter {idx}'))}</h1>"]
+            for para in str(ch.get("text", "")).split("\n\n"):
+                parts.append("<p>" + "<br/>".join(epub.escape_html(p) for p in para.splitlines()) + "</p>")
+            parts.append("</body>")
+            node.content = "\n".join(parts)
+            book.add_item(node)
+            epub_chapters.append(node)
+        book.toc = tuple(epub_chapters)
+        book.add_item(epub.EpubNavi())
+        book.add_item(epub.EpubNav())
+        book.add_item(epub.EpubNCX())
+        book.spine = ["nav", *epub_chapters]
+        epub.write_epub(out_path, book)
+        return
+    if fmt == "docx":
+        try:
+            import docx  # type: ignore
+        except Exception as e:
+            raise RuntimeError(
+                "DOCX export requires 'python-docx'. Install with: pip install python-docx or pip install podcast-transcriber[docx]"
+            ) from e
+        d = docx.Document()
+        if title:
+            d.add_heading(title, level=0)
+        if author:
+            p = d.add_paragraph(author)
+        if cover_image or cover_image_bytes:
+            from docx.shared import Inches  # type: ignore
+            tmp_path = None
+            try:
+                if cover_image:
+                    p = Path(cover_image)
+                    if p.exists():
+                        tmp_path = str(p)
+                elif cover_image_bytes:
+                    fd, tmp = tempfile.mkstemp(prefix="cover_", suffix=".jpg")
+                    os.close(fd)
+                    Path(tmp).write_bytes(cover_image_bytes)  # type: ignore[arg-type]
+                    tmp_path = tmp
+                if tmp_path:
+                    d.add_page_break()
+                    try:
+                        d.add_picture(tmp_path, width=Inches(6))
+                        d.add_page_break()
+                    except Exception:
+                        pass
+            finally:
+                if cover_image_bytes and tmp_path:
+                    try:
+                        Path(tmp_path).unlink(missing_ok=True)
+                    except Exception:
+                        pass
+        for idx, ch in enumerate(chapters, start=1):
+            d.add_heading(str(ch.get("title") or f"Chapter {idx}"), level=1)
+            for para in str(ch.get("text", "")).split("\n\n"):
+                d.add_paragraph(para.strip())
+            d.add_page_break()
+        d.save(out_path)
+        return
+    if fmt in {"md", "txt"}:
+        lines = []
+        if title:
+            if fmt == "md":
+                lines += [f"# {title}", ""]
+            else:
+                lines += [title.upper(), ""]
+        if author:
+            if fmt == "md":
+                lines += [f"_by {author}_", ""]
+            else:
+                lines += [f"by {author}", ""]
+        for idx, ch in enumerate(chapters, start=1):
+            ch_title = str(ch.get("title") or f"Chapter {idx}")
+            if fmt == "md":
+                lines += [f"\n\n## {ch_title}", ""]
+            else:
+                lines += ["\n\n" + ch_title, "" ]
+            lines.append(str(ch.get("text", "")).strip())
+        Path(out_path).write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+        return
+    if fmt == "pdf":
+        # Very simple PDF: chapters separated with headings
+        try:
+            from fpdf import FPDF  # type: ignore
+        except Exception as e:
+            raise RuntimeError("PDF export requires 'fpdf2'. Install with: pip install fpdf2") from e
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        if title:
+            pdf.set_font("Arial", size=16)
+            pdf.multi_cell(0, 10, title)
+            pdf.ln(4)
+        if author:
+            pdf.set_font("Arial", size=12)
+            pdf.multi_cell(0, 8, f"by {author}")
+            pdf.ln(6)
+        for idx, ch in enumerate(chapters, start=1):
+            pdf.set_font("Arial", size=14)
+            pdf.multi_cell(0, 9, str(ch.get("title") or f"Chapter {idx}"))
+            pdf.ln(2)
+            pdf.set_font("Arial", size=12)
+            for para in str(ch.get("text", "")).split("\n\n"):
+                for line in para.splitlines():
+                    pdf.multi_cell(0, 8, line)
+                pdf.ln(3)
+            if idx < len(chapters):
+                pdf.add_page()
+        pdf.output(out_path)
+        return
+    raise ValueError(f"Unsupported book format: {fmt}")
 
 
 def _export_kindle(

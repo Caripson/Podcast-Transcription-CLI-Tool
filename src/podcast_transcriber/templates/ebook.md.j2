@@ -1,0 +1,40 @@
+{# Base Jinja2 template for an ebook manuscript with theming hooks #}
+{% block front_matter %}{% endblock %}
+
+{% block title_page %}
+{% if title %}# {{ title }}
+{% endif %}
+{% if author %}_by {{ author }}_
+{% endif %}
+{% endblock %}
+
+{% block preface %}
+{% if summary %}
+## Summary
+
+{{ summary }}
+{% endif %}
+{% if topics %}
+## Topics
+
+{% for t in topics %}- {{ t }}
+{% endfor %}
+{% endif %}
+{% if takeaways %}
+## Key Takeaways
+
+{% for k in takeaways %}- {{ k }}
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% for ch in chapters %}
+## {{ ch.title }}
+
+{{ ch.text }}
+
+{% endfor %}
+{% endblock %}
+
+{% block appendix %}{% endblock %}

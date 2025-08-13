@@ -19,3 +19,29 @@ All notable changes to this project are documented here.
 - Export(JSON): Includes downloader metadata (`source` block) such as original URL, local path, ID3 title/artist, yt-dlp title/uploader, and cover URL when available.
 - CLI: Added `--interactive` guided mode that prompts for URL, service, format, output, and language.
 - Plugins: Introduced formal plugin architecture for services using entry points under `podcast_transcriber.services`. Built-ins are also exposed via entry points.
+
+## [1.3.0] - 2025-08-13
+- KDP pipeline helpers:
+  - New `--kdp` flag applies sane defaults (normalize text, EPUB with TOC, metadata pass-through).
+  - Batch combiner: `--combine-into` merges multiple `--input-file` sources into one EPUB/DOCX/MD/TXT book with chapters.
+- EPUB: Adds basic metadata (language, description, keywords) for better KDP ingestion.
+- DOCX: New `--format docx` (requires `python-docx` or extra `[docx]`).
+
+## [1.4.0] - 2025-08-13
+- Orchestrator CLI: `podcast-cli` with `ingest`, `process`, `send`, `run`, and `digest` commands.
+- Real ingestion: feed discovery via `feedparser` and duplicate avoidance using persistent state.
+- NLP stubs: semantic topic segmentation (optional `sentence-transformers`) and simple key takeaways.
+- Bilingual EPUB (premium mode): builds Original + Translated sections with Whisper translate when enabled.
+- Templates: Jinja2 template and renderer for markdown manuscripts; ready for themed ebooks.
+- Scheduler: `podcast-auto-run` using APScheduler for hourly/daily runs.
+- Docs/help: switched to English; README updated with orchestrator usage, scheduling, and security notes.
+
+## [1.4.1] - 2025-08-13
+- Orchestrator: optional Markdown rendering via Jinja2 templates (`emit_markdown`, `markdown_template`).
+- Ingestion: PodcastIndex lookups by feed URL, feed ID, or podcast GUID (when API env vars are set).
+- NLP: feature flag for semantic topic segmentation (`nlp.semantic`) and key takeaways (`nlp.takeaways`).
+
+## [1.4.2] - 2025-08-13
+- CLI: `podcast-cli process` accepts `--semantic` to force semantic segmentation for ad-hoc runs.
+- Templates: Base markdown template now includes overrideable blocks (`front_matter`, `title_page`, `preface`, `content`, `appendix`).
+- Examples: Added `examples/config.sample.yml` and `examples/templates/ebook_theme_minimal.md.j2`.

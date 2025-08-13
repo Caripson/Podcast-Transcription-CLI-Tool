@@ -1,0 +1,31 @@
+feeds:
+  - name: myfeed
+    url: https://example.com/podcast.rss
+  - name: by-id
+    podcastindex_feedid: "123456"
+  - name: by-guid
+    podcast_guid: "urn:uuid:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+service: whisper
+quality: standard  # quick|standard|premium
+language: en-US
+author: Your Name
+output_dir: ./out
+
+kindle:
+  to_email: your_name@kindle.com
+  from_email: sender@example.com
+
+smtp:
+  host: smtp.example.com
+  port: 587
+  user: smtp-user
+  # password set via env only, e.g. SMTP_PASS
+
+nlp:
+  semantic: true
+  takeaways: true
+
+emit_markdown: true
+# markdown_template: ./examples/templates/ebook_theme_minimal.md.j2
+

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "podcast-transcriber"
-version = "1.2.0"
+version = "1.4.2"
 description = "CLI tool to transcribe podcasts from a URL using pluggable services (Whisper, AWS, GCP)."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -26,9 +26,17 @@ whisper = ["openai-whisper>=20231117"]
 docs = ["mkdocs>=1.5.0", "mkdocs-material>=9.1.0"]
 dev = ["pytest>=7.4.0"]
 export = ["fpdf2>=2.7.0", "ebooklib>=0.18", "Pillow>=9.5.0"]
+docx = ["python-docx>=0.8.11"]
+orchestrator = ["PyYAML>=6.0"]
+ingest = ["feedparser>=6.0.10"]
+nlp = ["sentence-transformers>=2.2.2"]
+scheduler = ["APScheduler>=3.10.4"]
+templates = ["Jinja2>=3.1.2"]
 
 [project.scripts]
 podcast-transcriber = "podcast_transcriber.cli:main"
+podcast-cli = "podcast_transcriber.orchestrator:main"
+podcast-auto-run = "podcast_transcriber.flows.auto_run:main"
 
 [project.entry-points."podcast_transcriber.services"]
 whisper = "podcast_transcriber.services:WhisperService"

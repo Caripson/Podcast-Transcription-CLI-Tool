@@ -22,11 +22,32 @@ jobs:
           pip install mkdocs mkdocs-material
       - name: Build MkDocs site
         run: mkdocs build --strict
+      - name: Add job summary (build)
+        if: ${{ success() }}
+        run: |
+          REPO='${{ github.repository }}'
+          OWNER=${REPO%%/*}
+          NAME=${REPO##*/}
+          URL="https://${OWNER}.github.io/${NAME}/"
+          {
+            echo "### Docs Build";
+            echo "- Repository: ${REPO}";
+            echo "- URL: ${URL}";
+            echo "- Status: built";
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
+      - name: Add job summary (deploy)
+        if: ${{ success() }}
+        run: |
+          REPO='${{ github.repository }}'
+          OWNER=${REPO%%/*}
+          NAME=${REPO##*/}
+          URL="https://${OWNER}.github.io/${NAME}/"
+          echo "- Deployed to ${URL}" >> "$GITHUB_STEP_SUMMARY"
   preview:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -46,3 +67,7 @@ jobs:
         with:
           name: docs-site
           path: site
+      - name: Add job summary (preview)
+        run: |
+          echo "### Docs Preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Artifact: docs-site" >> "$GITHUB_STEP_SUMMARY"

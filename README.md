@@ -7,15 +7,19 @@ Badges
 - CI: ![CI](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/ci.yml/badge.svg)
 - Docs: [![Docs](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml)
 - PyPI: [![PyPI - Test](https://img.shields.io/badge/PyPI-test-brightgreen)](https://pypi.org/project/podcast-transcriber/)
+- Smoke: [![Smoke](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/smoke.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/smoke.yml)
+- Version: ![Version](https://img.shields.io/badge/version-1.4.2-blue)
 
 ## Features
 
 - Backends: `--service whisper|aws|gcp` (pluggable architecture).
 - Inputs: Local files, direct URLs, YouTube (via `yt-dlp`), and podcast RSS feeds (first enclosure).
 - Outputs: `--format txt|pdf|epub|mobi|azw|azw3|kfx|srt|vtt|json|md`.
+  - Plus DOCX via optional extra: `docx`.
 - Export details:
   - PDF: headers/footers, optional cover page, auto‑TOC from segments, custom fonts and page size.
-  - EPUB/Kindle: built‑in themes or custom CSS, multi‑chapter from segments, optional cover.
+- EPUB/Kindle: built‑in themes or custom CSS, multi‑chapter from segments, optional cover.
+  - DOCX: simple manuscript export with optional cover page (install `[docx]`).
   - Subtitles: SRT/VTT with timestamps and optional speaker labels.
   - JSON: full transcript + segments + word‑level timings (when available).
 - Advanced transcription:
@@ -92,6 +96,83 @@ python -m podcast_transcriber --url <URL|path> --service <whisper|aws|gcp> --out
 # after install
 podcast-transcriber --url <URL|path> --service <whisper|aws|gcp> --output out.txt
 ```
+
+## Orchestrator CLI (beta)
+
+High‑level pipeline for “ingest → process → send to Kindle” and weekly digests.
+
+- Install extras: `pip install -e .[orchestrator,ingest,templates]` (and optionally `[scheduler,nlp]`).
+
+Subcommands:
+
+- `podcast-cli ingest --config config.yml` — Discover new episodes and create a job.
+- `podcast-cli process --job-id <id>` — Transcribe and build EPUB for a job.
+  - Ad‑hoc semantic segmentation: add `--semantic` to this command to override YAML.
+- `podcast-cli send --job-id <id>` — Email EPUBs to your Kindle address.
+- `podcast-cli run --config config.yml` — Run ingest → process → send in one go.
+- `podcast-cli digest --feed <name> --weekly` — Build a weekly digest EPUB.
+
+Config (YAML) example:
+
+```yaml
+feeds:
+  - name: myfeed
+    url: https://example.com/podcast.rss
+  - name: altfeed-by-id
+    podcastindex_feedid: "123456"
+  - name: altfeed-by-guid
+    podcast_guid: "urn:uuid:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+service: whisper
+quality: standard  # quick|standard|premium
+language: sv-SE
+author: Your Name
+output_dir: ./out
+kindle:
+  to_email: your_name@kindle.com
+  from_email: sender@example.com
+smtp:
+  host: smtp.example.com
+  port: 587
+  user: smtp-user
+  # password set via env only, e.g. SMTP_PASS
+
+# NLP options (optional)
+nlp:
+  semantic: true      # enable semantic topic segmentation (requires [nlp] extra)
+  takeaways: true     # add a simple "Key takeaways" section
+
+# Markdown output (optional)
+emit_markdown: true
+markdown_template: ./path/to/ebook.md.j2  # omit to use built-in template
+
+Templating and themes:
+
+- The built-in template defines blocks you can override: `front_matter`, `title_page`, `preface`, `content`, and `appendix`.
+- Create your own Jinja2 theme that `{% extends %}` the base template at `src/podcast_transcriber/templates/ebook.md.j2`.
+- An example template is provided at `examples/templates/ebook_theme_minimal.md.j2`.
+
+Topics and takeaways in Markdown:
+
+- When NLP is enabled (`nlp.semantic: true` and/or `podcast-cli process --semantic`), the Markdown includes a "Topics" section listing chapter titles derived from segmentation.
+- When `nlp.takeaways: true`, the Markdown also includes a "Key Takeaways" section with 3–5 concise bullets. If spaCy is installed, noun chunks are used; otherwise a heuristic is applied.
+```
+
+Secrets policy: Store SMTP password and API keys in environment variables (e.g. `SMTP_PASS`, cloud provider keys). Ensure your Kindle address whitelists your sender.
+
+Scheduling (optional):
+
+- Install: `pip install -e .[scheduler,orchestrator,ingest]`
+- Run once: `podcast-auto-run --config config.yml --once`
+- Run hourly/daily: `podcast-auto-run --config config.yml --interval hourly|daily`
+
+Topic segmentation (optional):
+
+- Install: `pip install -e .[nlp]`
+- The CLI uses a simple fallback if embeddings are unavailable; with embeddings, segments are formed by semantic similarity dips and “key takeaways” are extracted heuristically.
+
+Bilingual EPUB (premium idea):
+
+- Set `bilingual: true` in config to attempt “Original” + “Translated” sections when using Whisper (translation is toggled internally). If translation fails, it falls back to original only.
 
 ## CLI Overview
 
@@ -232,7 +313,54 @@ EOF
   --service whisper \
   --input-file list.txt \
   --format md \
-  --output ./out_dir
+--output ./out_dir
+```
+
+KDP pipeline (EPUB) for a single episode
+
+```bash
+./Transcribe_podcast_to_text.sh \
+  --url ./episode.mp3 \
+  --service whisper \
+  --kdp \
+  --title "Podcasten: Säsong 1 – Avsnitt 1" \
+  --author "Ditt Namn" \
+  --description "En transkriberad version av avsnittet..." \
+  --keywords "podcast, svensk, teknik" \
+  --cover-image ./cover.jpg \
+  --output ./episode.epub
+```
+
+KDP book from multiple episodes (combine into one EPUB)
+
+```bash
+cat > episodes.txt <<EOF
+https://example.com/ep1.mp3
+https://example.com/ep2.mp3
+EOF
+
+./Transcribe_podcast_to_text.sh \
+  --service whisper \
+  --input-file episodes.txt \
+  --combine-into ./podcast-book.epub \
+  --kdp \
+  --title "Min Podcast – Volym 1" \
+  --author "Ditt Namn" \
+  --description "Transkriptioner av säsongens bästa avsnitt" \
+  --keywords "podcast, svenska, samhälle"
+```
+
+DOCX manuscript (requires extra)
+
+```bash
+pip install -e .[docx]
+./Transcribe_podcast_to_text.sh \
+  --url ./episode.mp3 \
+  --service whisper \
+  --format docx \
+  --title "Avsnitt 1" \
+  --author "Ditt Namn" \
+  --output ./episode.docx
 ```
 
 ## Notes and Tips

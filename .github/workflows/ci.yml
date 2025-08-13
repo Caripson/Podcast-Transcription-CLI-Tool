@@ -29,3 +29,37 @@ jobs:
           pip install pytest
       - name: Run tests
         run: pytest -q
+      - name: Add job summary (success)
+        if: ${{ success() }}
+        run: |
+          PYTEST_VER=$(python - <<'PY'
+import pytest, sys
+print(getattr(pytest, '__version__', 'unknown'))
+PY
+          )
+          TOTAL_TESTS=$(pytest --collect-only -q 2>/dev/null | wc -l)
+          {
+            echo "### Test Job";
+            echo "- Python: ${{ matrix.python-version }}";
+            echo "- Extras: ${{ matrix.extras }}";
+            echo "- Pytest: ${PYTEST_VER}";
+            echo "- Collected tests: ${TOTAL_TESTS}";
+            echo "- Status: success";
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Add job summary (failure)
+        if: ${{ failure() }}
+        run: |
+          PYTEST_VER=$(python - <<'PY'
+import pytest, sys
+print(getattr(pytest, '__version__', 'unknown'))
+PY
+          )
+          TOTAL_TESTS=$(pytest --collect-only -q 2>/dev/null | wc -l)
+          {
+            echo "### Test Job";
+            echo "- Python: ${{ matrix.python-version }}";
+            echo "- Extras: ${{ matrix.extras }}";
+            echo "- Pytest: ${PYTEST_VER}";
+            echo "- Collected tests: ${TOTAL_TESTS}";
+            echo "- Status: failure";
+          } >> "$GITHUB_STEP_SUMMARY"
