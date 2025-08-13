@@ -167,6 +167,7 @@ def cmd_process(args) -> int:
         )
         # Optional: emit companion Markdown using Jinja2 template
         if emit_md:
+            md_path = out_path.with_suffix('.md')
             try:
                 md_text = render_markdown(md_template, {
                     "title": doc.title,
@@ -176,10 +177,29 @@ def cmd_process(args) -> int:
                     "takeaways": res.get("takeaways"),
                     "chapters": [{"title": ch.title, "text": ch.text} for ch in doc.chapters],
                 })
-                md_path = out_path.with_suffix('.md')
-                md_path.write_text(md_text, encoding='utf-8')
             except Exception:
-                pass
+                # Fallback: minimal Markdown without Jinja2 dependency
+                lines = []
+                if doc.title:
+                    lines += [f"# {doc.title}", ""]
+                if doc.author:
+                    lines += [f"_by {doc.author}_", ""]
+                if doc.summary:
+                    lines += ["## Summary", "", str(doc.summary), ""]
+                topics = [ch.title for ch in doc.chapters]
+                if topics:
+                    lines += ["## Topics", ""]
+                    lines += ["- " + t for t in topics]
+                    lines += [""]
+                takeaways = res.get("takeaways")
+                if takeaways:
+                    lines += ["## Key Takeaways", ""]
+                    lines += ["- " + k for k in takeaways]
+                    lines += [""]
+                for ch in doc.chapters:
+                    lines += [f"## {ch.title}", "", ch.text, ""]
+                md_text = "\n".join(lines).rstrip() + "\n"
+            md_path.write_text(md_text, encoding='utf-8')
         processed.append({"episode": ep, "output": str(out_path)})
     job["artifacts"] = processed
     job["status"] = "processed"
