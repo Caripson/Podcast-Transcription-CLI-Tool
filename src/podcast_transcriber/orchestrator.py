@@ -13,6 +13,7 @@ from .utils.textproc import normalize_text, summarize_text
 from .kindle.epub_builder import Document, Chapter
 from .templates.render import render_markdown
 from .nlp.segment_topics import segment_with_embeddings, key_takeaways_better
+from typing import Optional, Dict
 from .delivery.send_to_kindle import send_file_via_smtp
 
 
@@ -52,7 +53,7 @@ def cmd_ingest(args) -> int:
     return 0
 
 
-def _process_episode(ep: dict, service_name: str, quality: str, language: str | None, nlp_cfg: dict | None = None) -> dict:
+def _process_episode(ep: dict, service_name: str, quality: str, language: Optional[str], nlp_cfg: Optional[Dict] = None) -> dict:
     qs = pick_quality_settings(quality)
     service = services.get_service(service_name)
     if service_name == "whisper" and getattr(services, "WhisperService", None) is not None and isinstance(service, services.WhisperService):

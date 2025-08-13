@@ -90,7 +90,10 @@ def _podcastindex_request(endpoint: str, params: dict):
         return None
 
 
-def _podcastindex_by_id(feedid: str | None = None, guid: str | None = None):
+from typing import Optional
+
+
+def _podcastindex_by_id(feedid: Optional[str] = None, guid: Optional[str] = None):
     if feedid:
         return _podcastindex_request("episodes/byfeedid", {"id": feedid, "max": 20})
     if guid:
