@@ -79,6 +79,17 @@ pip install -e .[gcp]
 pip install -e .[export]
 ```
 
+### Environment (.env)
+
+- Copy the example file and fill in values as needed:
+
+```bash
+cp .env.example .env
+# edit .env and set SMTP_*, KINDLE_*, and optional PodcastIndex/API keys
+```
+
+- The orchestrator automatically loads `.env` if `python-dotenv` is installed (`pip install -e .[env]`). Never commit a real `.env` — the repo ignores `.env` by default.
+
 ## Quickstart
 
 Run via Bash wrapper from source (no package install of this project required):

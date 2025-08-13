@@ -24,3 +24,5 @@ htmlcov/
 # MkDocs
 site/
 
+# Env
+.env

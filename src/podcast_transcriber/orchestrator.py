@@ -292,6 +292,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv=None) -> int:
     if argv is None:
         argv = sys.argv[1:]
+    # Load .env if python-dotenv is available (optional convenience)
+    try:
+        import dotenv  # type: ignore
+        dotenv.load_dotenv()  # loads from .env in CWD if present
+    except Exception:
+        pass
     args = build_parser().parse_args(argv)
     return int(args.func(args) or 0)
 

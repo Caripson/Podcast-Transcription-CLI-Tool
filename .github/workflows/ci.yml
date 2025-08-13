@@ -27,15 +27,18 @@ jobs:
             pip install -e .[${{ matrix.extras }}]
           fi
           pip install pytest
+      - name: Validate .env.example
+        run: |
+          python scripts/check_env_example.py
       - name: Run tests
         run: pytest -q
       - name: Add job summary (success)
         if: ${{ success() }}
         run: |
           PYTEST_VER=$(python - <<'PY'
-import pytest, sys
-print(getattr(pytest, '__version__', 'unknown'))
-PY
+          import pytest, sys
+          print(getattr(pytest, '__version__', 'unknown'))
+          PY
           )
           TOTAL_TESTS=$(pytest --collect-only -q 2>/dev/null | wc -l)
           {
@@ -50,9 +53,9 @@ PY
         if: ${{ failure() }}
         run: |
           PYTEST_VER=$(python - <<'PY'
-import pytest, sys
-print(getattr(pytest, '__version__', 'unknown'))
-PY
+          import pytest, sys
+          print(getattr(pytest, '__version__', 'unknown'))
+          PY
           )
           TOTAL_TESTS=$(pytest --collect-only -q 2>/dev/null | wc -l)
           {

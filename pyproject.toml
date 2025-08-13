@@ -32,6 +32,7 @@ ingest = ["feedparser>=6.0.10"]
 nlp = ["sentence-transformers>=2.2.2"]
 scheduler = ["APScheduler>=3.10.4"]
 templates = ["Jinja2>=3.1.2"]
+env = ["python-dotenv>=1.0.0"]
 
 [project.scripts]
 podcast-transcriber = "podcast_transcriber.cli:main"
