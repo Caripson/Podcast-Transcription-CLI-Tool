@@ -1,20 +1,20 @@
 import argparse
 import os
 import sys
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, Optional
 
-from .storage.state import StateStore
-from .ingestion.feed import discover_new_episodes
-from .utils.downloader import ensure_local_audio
 from . import services
-from .exporters import export_book
-from .utils.textproc import normalize_text, summarize_text
-from .kindle.epub_builder import Document, Chapter
-from .templates.render import render_markdown
-from .nlp.segment_topics import segment_with_embeddings, key_takeaways_better
-from typing import Optional, Dict
 from .delivery.send_to_kindle import send_file_via_smtp
+from .exporters import export_book
+from .ingestion.feed import discover_new_episodes
+from .kindle.epub_builder import Chapter, Document
+from .nlp.segment_topics import key_takeaways_better, segment_with_embeddings
+from .storage.state import StateStore
+from .templates.render import render_markdown
+from .utils.downloader import ensure_local_audio
+from .utils.textproc import normalize_text, summarize_text
 
 
 def load_yaml_config(path: str) -> dict:

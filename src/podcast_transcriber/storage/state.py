@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
-
 
 STATE_DIR = Path(os.environ.get("PODCAST_STATE_DIR", str(Path.home() / ".local/state/podcast_transcriber")))
 STATE_DIR.mkdir(parents=True, exist_ok=True)
