@@ -15,4 +15,3 @@ class EchoService(TranscriptionService):
         self.last_segments = [{"start": 0.0, "end": 0.0, "text": f"ECHO: {local_path}"}]
         self.last_words = []
         return f"ECHO: {local_path}"
-

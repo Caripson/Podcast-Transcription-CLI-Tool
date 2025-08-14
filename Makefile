@@ -17,6 +17,7 @@ help:
 	@echo "  make release VERSION=X.Y.Z  # build, upload, tag"
 	@echo "  make coverage        # run pytest with coverage"
 	@echo "  make coverage-html   # run coverage and build HTML report"
+	@echo "  make coverage-ci     # run coverage with fail-under=60"
 
 venv:
 	python -m venv .venv
@@ -35,6 +36,9 @@ coverage:
 
 coverage-html:
 	python -m pytest --cov=podcast_transcriber --cov-report=html --cov-report=term-missing:skip-covered --cov-report=xml
+
+coverage-ci:
+	python -m pytest --cov=podcast_transcriber --cov-report=xml --cov-report=term-missing:skip-covered --cov-fail-under=60
 
 fmt:
 	python -m ruff format src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)

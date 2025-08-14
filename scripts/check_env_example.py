@@ -13,6 +13,7 @@ REQUIRED_KEYS = [
     "PODCASTINDEX_API_SECRET",
 ]
 
+
 def parse_env(path: Path):
     data = {}
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -25,6 +26,7 @@ def parse_env(path: Path):
         data[k.strip()] = v.strip()
     return data
 
+
 def main():
     p = Path(".env.example")
     if not p.exists():
@@ -33,7 +35,10 @@ def main():
     env = parse_env(p)
     missing = [k for k in REQUIRED_KEYS if k not in env]
     if missing:
-        print(f"Missing required keys in .env.example: {', '.join(missing)}", file=sys.stderr)
+        print(
+            f"Missing required keys in .env.example: {', '.join(missing)}",
+            file=sys.stderr,
+        )
         return 3
     # Basic sanity: ensure no obvious secrets committed (heuristic)
     bad = []
@@ -42,11 +47,14 @@ def main():
             if v and len(v) > 5 and "example" not in v.lower():
                 bad.append(k)
     if bad:
-        print(f"Suspicious non-empty secret-like values in .env.example: {', '.join(bad)}", file=sys.stderr)
+        print(
+            f"Suspicious non-empty secret-like values in .env.example: {', '.join(bad)}",
+            file=sys.stderr,
+        )
         return 4
     print(".env.example looks OK")
     return 0
 
+
 if __name__ == "__main__":
     raise SystemExit(main())
-
