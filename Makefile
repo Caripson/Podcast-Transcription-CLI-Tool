@@ -15,6 +15,8 @@ help:
 	@echo "  make docs-serve      # serve mkdocs"
 	@echo "  make build           # build sdist+wheel"
 	@echo "  make release VERSION=X.Y.Z  # build, upload, tag"
+	@echo "  make coverage        # run pytest with coverage"
+	@echo "  make coverage-html   # run coverage and build HTML report"
 
 venv:
 	python -m venv .venv
@@ -27,6 +29,12 @@ dev:
 
 test:
 	. .venv/bin/activate && pytest -q
+
+coverage:
+	python -m pytest --cov=podcast_transcriber --cov-report=term-missing:skip-covered --cov-report=xml
+
+coverage-html:
+	python -m pytest --cov=podcast_transcriber --cov-report=html --cov-report=term-missing:skip-covered --cov-report=xml
 
 fmt:
 	python -m black src tests || (echo "Black not found. Install dev deps: pip install -e .[dev]" && exit 1)
