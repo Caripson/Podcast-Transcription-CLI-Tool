@@ -16,6 +16,7 @@
 - Tests: `pytest -q` (single file: `pytest tests/test_cli.py -q`).
 - Smoke test: `chmod +x scripts/smoke.sh && ./scripts/smoke.sh`.
 - Docs (optional): `pip install -e .[docs] && mkdocs serve` (build: `mkdocs build`).
+- CI-like local run: `bash scripts/ci_local.sh python3.12` (loops extras and runs pytest). 
 
 ## Coding Style & Naming Conventions
 - Python 3.9+, PEP 8 (4-space indent). Prefer type hints in public APIs.
