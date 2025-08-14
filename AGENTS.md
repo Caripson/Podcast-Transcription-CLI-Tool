@@ -18,7 +18,7 @@
 - Docs (optional): `pip install -e .[docs] && mkdocs serve` (build: `mkdocs build`).
 - CI-like local run: `bash scripts/ci_local.sh python3.12` (loops extras and runs pytest). 
  - Coverage: `make coverage` (XML + term report), `make coverage-html` for an HTML report in `htmlcov/`.
- - CI coverage threshold: enforced via `--cov-fail-under` (default 45%). Adjust in `.github/workflows/ci.yml` (`COV_MIN`).
+ - CI coverage threshold: enforced via `--cov-fail-under` (default 60%). Adjust in `.github/workflows/ci.yml` (`COV_MIN`).
 
 ## Coding Style & Naming Conventions
 - Python 3.9+, PEP 8 (4-space indent). Prefer type hints in public APIs.
