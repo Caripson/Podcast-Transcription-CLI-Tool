@@ -1,6 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
+from typing import Optional
 
 from . import __credits__, __version__, services
 from .utils.downloader import ensure_local_audio
@@ -158,10 +159,6 @@ def _load_config(path: str) -> dict:
     if not p.exists():
         return {}
     return tomllib.loads(p.read_text(encoding="utf-8"))
-
-
-from typing import Optional
-
 
 def _discover_default_config() -> Optional[str]:
     # Priority: env var, XDG, ~/.config, legacy home file
@@ -423,8 +420,11 @@ def main(argv=None) -> int:
                 payload = _cache.get(args.cache_dir, cache_key)
                 if payload and "text" in payload:
                     text = payload["text"]
-                    setattr(service, "last_segments", payload.get("segments"))
-                    setattr(service, "last_words", payload.get("words"))
+                    try:
+                        service.last_segments = payload.get("segments")
+                        service.last_words = payload.get("words")
+                    except Exception:
+                        pass
             except Exception:
                 text = None
         if text is None:

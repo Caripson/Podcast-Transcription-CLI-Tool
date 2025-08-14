@@ -74,4 +74,8 @@ select = [
 ]
 ignore = [
   "E501", # line length handled by Black; permit long help strings
+  "UP045", # keep Optional[X] for Python 3.9 compatibility
+  "UP006", # built-in generics optional for now
+  "UP035", # typing.* deprecated aliases optional for now
+  "I001",  # import sort minor friction; handled gradually
 ]

@@ -72,8 +72,10 @@ class WhisperService(TranscriptionService):
             # cleanup chunks
             try:
                 for f in Path(tempdir).glob("*"):
-                    try: f.unlink()
-                    except Exception: pass
+                    try:
+                        f.unlink()
+                    except Exception:
+                        pass
                 Path(tempdir).rmdir()
             except Exception:
                 pass

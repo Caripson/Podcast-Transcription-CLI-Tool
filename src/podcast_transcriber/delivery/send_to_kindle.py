@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import mimetypes
-import os
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
@@ -40,4 +39,3 @@ def send_file_via_smtp(
         s.starttls()
         s.login(smtp_user, smtp_password)
         s.send_message(msg)
-

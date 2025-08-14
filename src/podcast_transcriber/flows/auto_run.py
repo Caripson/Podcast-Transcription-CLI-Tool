@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
-from datetime import datetime
-
-from ..orchestrator import cmd_ingest, cmd_process, cmd_send, load_yaml_config
+from ..orchestrator import cmd_ingest, cmd_process, cmd_send
 from ..storage.state import StateStore
 
 log = logging.getLogger("podcast.auto_run")
@@ -60,4 +57,3 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())
-

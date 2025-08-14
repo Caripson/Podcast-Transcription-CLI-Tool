@@ -1,9 +1,9 @@
 import argparse
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 from . import services
 from .delivery.send_to_kindle import send_file_via_smtp
@@ -53,7 +53,7 @@ def cmd_ingest(args) -> int:
     return 0
 
 
-def _process_episode(ep: dict, service_name: str, quality: str, language: Optional[str], nlp_cfg: Optional[Dict] = None) -> dict:
+def _process_episode(ep: dict, service_name: str, quality: str, language: Optional[str], nlp_cfg: Optional[dict] = None) -> dict:
     qs = pick_quality_settings(quality)
     service = services.get_service(service_name)
     if service_name == "whisper" and getattr(services, "WhisperService", None) is not None and isinstance(service, services.WhisperService):
@@ -61,7 +61,7 @@ def _process_episode(ep: dict, service_name: str, quality: str, language: Option
         service.translate = bool(qs.get("translate", False))
     if qs.get("diarization", 0) and service_name in ("aws", "gcp"):
         try:
-            setattr(service, "speakers", int(qs["diarization"]))
+            service.speakers = int(qs["diarization"])  # type: ignore[attr-defined]
         except Exception:
             pass
     local_path = ensure_local_audio(ep["source"])  # URL or path
@@ -128,7 +128,6 @@ def cmd_process(args) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     processed = []
     bilingual = bool(cfg.get("bilingual"))
-    translation_lang = cfg.get("translation_language") or "en"
     nlp_cfg = cfg.get("nlp") or {}
     if getattr(args, "semantic", False):
         nlp_cfg = dict(nlp_cfg)

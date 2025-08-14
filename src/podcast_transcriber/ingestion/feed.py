@@ -4,8 +4,7 @@ import hashlib
 import hmac
 import time
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Optional
 
 
 def _load_feed(url: str):
@@ -31,8 +30,8 @@ def _try_podcastindex(url: str):
     except Exception:
         return None
     ts = int(time.time())
-    data = f"{key}{ts}".encode("utf-8")
-    sig = hmac.new(secret.encode("utf-8"), data, hashlib.sha1).hexdigest()
+    data = f"{key}{ts}".encode()
+    sig = hmac.new(secret.encode(), data, hashlib.sha1).hexdigest()
     headers = {
         "User-Agent": "podcast-transcriber/1",
         "X-Auth-Date": str(ts),
@@ -68,8 +67,8 @@ def _podcastindex_request(endpoint: str, params: dict):
     except Exception:
         return None
     ts = int(time.time())
-    data = f"{key}{ts}".encode("utf-8")
-    sig = hmac.new(secret.encode("utf-8"), data, hashlib.sha1).hexdigest()
+    data = f"{key}{ts}".encode()
+    sig = hmac.new(secret.encode(), data, hashlib.sha1).hexdigest()
     headers = {
         "User-Agent": "podcast-transcriber/1",
         "X-Auth-Date": str(ts),
@@ -90,9 +89,6 @@ def _podcastindex_request(endpoint: str, params: dict):
         return None
 
 
-from typing import Optional
-
-
 def _podcastindex_by_id(feedid: Optional[str] = None, guid: Optional[str] = None):
     if feedid:
         return _podcastindex_request("episodes/byfeedid", {"id": feedid, "max": 20})
@@ -101,13 +97,13 @@ def _podcastindex_by_id(feedid: Optional[str] = None, guid: Optional[str] = None
     return None
 
 
-def discover_new_episodes(config: dict, store) -> List[Dict[str, Any]]:
+def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
     """Discover new episodes from configured feeds using feedparser.
 
     Avoids duplicates via store.has_seen(feed, id/link). Returns list of episode dicts.
     """
     feeds = config.get("feeds") or []
-    episodes: List[Dict[str, Any]] = []
+    episodes: list[dict[str, Any]] = []
     for f in feeds:
         name = f.get("name") or f.get("url") or f.get("podcastindex_feedid") or f.get("podcast_guid") or "feed"
         url = f.get("url")

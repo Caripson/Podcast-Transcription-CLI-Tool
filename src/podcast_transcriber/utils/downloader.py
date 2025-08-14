@@ -1,8 +1,11 @@
 import os
 import re
+import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import Union
+from urllib.parse import urlparse
 
 
 # 'requests' is a core dependency but import it lazily so the CLI can start
@@ -20,9 +23,7 @@ def _require_requests():
         ) from e
 
 
-import shutil
-import subprocess
-from urllib.parse import urlparse
+ 
 
 _URL_RE = re.compile(r"^https?://", re.IGNORECASE)
 

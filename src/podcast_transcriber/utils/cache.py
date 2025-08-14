@@ -2,7 +2,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 
 def _default_cache_dir() -> Path:
@@ -17,7 +17,7 @@ def _default_cache_dir() -> Path:
 def compute_key(
     source: str,
     service: str,
-    opts: Tuple[str, ...],
+    opts: tuple[str, ...],
     local_path: Optional[str] = None,
 ) -> str:
     h = hashlib.sha256()

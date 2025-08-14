@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+ 
 
 
-def segment_by_simple_rules(text: str, max_chars: int = 4000) -> List[Dict[str, str]]:
+def segment_by_simple_rules(text: str, max_chars: int = 4000) -> list[dict[str, str]]:
     """Very simple fallback segmenter that creates topic-like chunks.
 
     Splits on double newlines and groups into chunks of ~max_chars.
     Returns a list of {title, text}.
     """
     paras = [p.strip() for p in text.split("\n\n") if p.strip()]
-    out: List[Dict[str, str]] = []
-    buf: List[str] = []
+    out: list[dict[str, str]] = []
+    buf: list[str] = []
     size = 0
     for p in paras:
         buf.append(p)
@@ -24,7 +24,7 @@ def segment_by_simple_rules(text: str, max_chars: int = 4000) -> List[Dict[str, 
     return out
 
 
-def segment_with_embeddings(text: str, threshold: float = 0.75, max_chunk_chars: int = 6000) -> List[Dict[str, str]]:
+def segment_with_embeddings(text: str, threshold: float = 0.75, max_chunk_chars: int = 6000) -> list[dict[str, str]]:
     """Optional semantic segmentation using sentence embeddings.
 
     Requires 'sentence-transformers'. Falls back to simple rules if unavailable.
@@ -41,9 +41,8 @@ def segment_with_embeddings(text: str, threshold: float = 0.75, max_chunk_chars:
         return [{"title": "Topic 1", "text": text.strip()}]
     model = SentenceTransformer("all-MiniLM-L6-v2")
     embs = model.encode(sents, convert_to_tensor=True, show_progress_bar=False)
-    chunks: List[Dict[str, str]] = []
-    buf: List[str] = [sents[0]]
-    last_idx = 0
+    chunks: list[dict[str, str]] = []
+    buf: list[str] = [sents[0]]
     for i in range(1, len(sents)):
         sim = float(util.cos_sim(embs[i - 1], embs[i]).item())
         if sim < threshold or sum(len(x) for x in buf) > max_chunk_chars:
@@ -55,7 +54,7 @@ def segment_with_embeddings(text: str, threshold: float = 0.75, max_chunk_chars:
     return chunks
 
 
-def key_takeaways(text: str, max_points: int = 5) -> List[str]:
+def key_takeaways(text: str, max_points: int = 5) -> list[str]:
     """Very simple key takeaway extraction by frequent noun-ish phrases.
 
     Placeholder for a more robust summarizer. Keeps logic lightweight.
@@ -72,7 +71,7 @@ def key_takeaways(text: str, max_points: int = 5) -> List[str]:
     return [w for w, _ in ranked[:max_points]]
 
 
-def key_takeaways_better(text: str, max_points: int = 5) -> List[str]:
+def key_takeaways_better(text: str, max_points: int = 5) -> list[str]:
     """Improved key takeaways extractor.
 
     Strategy:
@@ -96,7 +95,7 @@ def key_takeaways_better(text: str, max_points: int = 5) -> List[str]:
             # fallback if no noun_chunks
             if not phrases:
                 phrases = [t.lemma_ for t in doc if t.is_alpha and t.pos_ in {"NOUN", "PROPN"}]
-            freq: Dict[str, int] = {}
+            freq: dict[str, int] = {}
             for p in phrases:
                 key = p.lower()
                 freq[key] = freq.get(key, 0) + 1
@@ -111,7 +110,7 @@ def key_takeaways_better(text: str, max_points: int = 5) -> List[str]:
     caps = re.findall(r"(?:[A-Z][a-z]+(?: [A-Z][a-z]+){0,3})", text)
     words = re.findall(r"[A-Za-zÅÄÖåäö0-9']+", text)
     # Build frequency with preference for multiword caps
-    freq: Dict[str, int] = {}
+    freq: dict[str, int] = {}
     for p in caps:
         k = p.strip().lower()
         if len(k) >= 4:

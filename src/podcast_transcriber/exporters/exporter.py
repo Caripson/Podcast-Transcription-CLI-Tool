@@ -391,7 +391,7 @@ def _export_docx(
         ) from e
     doc = docx.Document()
     if title:
-        h = doc.add_heading(title, level=0)
+        doc.add_heading(title, level=0)
     if author:
         p = doc.add_paragraph()
         run = p.add_run(author)
