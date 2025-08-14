@@ -1,7 +1,10 @@
 from pathlib import Path
 from unittest import mock
 
-from podcast_transcriber.exporters.exporter import export_transcript, infer_format_from_path
+from podcast_transcriber.exporters.exporter import (
+    export_transcript,
+    infer_format_from_path,
+)
 
 
 def test_infer_format_from_path_variants():
@@ -26,6 +29,7 @@ def test_pdf_export_with_fake_fpdf(tmp_path, monkeypatch):
         def __init__(self, *args, **kwargs):
             self.l_margin = 10
             self.w = 210
+
         def set_auto_page_break(self, auto=True, margin=15):
             pass
 
@@ -70,6 +74,7 @@ def test_pdf_export_with_fake_fpdf(tmp_path, monkeypatch):
         cover_image=str(cover),
         pdf_cover_fullpage=True,
     )
+
 
 def test_pdf_cover_only_page_then_text(tmp_path, monkeypatch):
     out = tmp_path / "t2.pdf"
@@ -133,7 +138,10 @@ def test_epub_to_kindle_calls_ebook_convert(tmp_path, monkeypatch):
     out = tmp_path / "t.azw3"
 
     # Pretend ebook-convert exists
-    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/ebook-convert" if name == "ebook-convert" else None)
+    monkeypatch.setattr(
+        "shutil.which",
+        lambda name: "/usr/bin/ebook-convert" if name == "ebook-convert" else None,
+    )
 
     # Fake ebooklib.epub
     class FakeBook:

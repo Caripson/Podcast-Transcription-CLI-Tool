@@ -4,10 +4,12 @@ import tempfile
 from pathlib import Path
 from typing import Union
 
+
 # 'requests' is a core dependency but import it lazily so the CLI can start
 def _require_requests():
     try:
         import requests  # type: ignore
+
         return requests
     except Exception as e:  # pragma: no cover
         raise RuntimeError(
@@ -16,9 +18,11 @@ def _require_requests():
             "  python -m venv .venv && source .venv/bin/activate && pip install -e .\n"
             "Or: pip install requests"
         ) from e
+
+
+import shutil
 import subprocess
 from urllib.parse import urlparse
-import shutil
 
 _URL_RE = re.compile(r"^https?://", re.IGNORECASE)
 
@@ -39,7 +43,7 @@ class LocalAudioPath(str):
         obj.is_temp = is_temp  # type: ignore[attr-defined]
         # Back-compat for older attribute name
         try:
-            setattr(obj, "_is_temp", is_temp)
+            obj._is_temp = is_temp
         except Exception:
             pass
         return obj
@@ -57,6 +61,7 @@ def _http_get(url: str, **kwargs):
             if i == retries - 1:
                 break
             import time
+
             time.sleep(backoff ** (i + 1))
     if last_exc:
         raise last_exc
@@ -90,44 +95,49 @@ def ensure_local_audio(source: Union[str, os.PathLike]) -> str:
                     try:
                         out = subprocess.check_output(["yt-dlp", "-J", s])
                         import json
+
                         data = json.loads(out.decode("utf-8", errors="ignore"))
                         info_title = data.get("title")
                         info_thumb = data.get("thumbnail")
                         info_uploader = data.get("uploader")
                     except Exception:
                         pass
-                    subprocess.run([
-                        "yt-dlp","-x","--audio-format","m4a","-o", tmp_path, s
-                    ], check=True)
+                    subprocess.run(
+                        ["yt-dlp", "-x", "--audio-format", "m4a", "-o", tmp_path, s],
+                        check=True,
+                    )
                     lp = LocalAudioPath(tmp_path, is_temp=True)
                     if info_title:
-                        setattr(lp, "source_title", info_title)
+                        lp.source_title = info_title
                     if info_thumb:
-                        setattr(lp, "cover_url", info_thumb)
+                        lp.cover_url = info_thumb
                     try:
                         if info_uploader:
-                            setattr(lp, "source_uploader", info_uploader)
+                            lp.source_uploader = info_uploader
                     except Exception:
                         pass
                     return lp
                 except Exception:
-                    try: Path(tmp_path).unlink(missing_ok=True)
-                    except Exception: pass
+                    try:
+                        Path(tmp_path).unlink(missing_ok=True)
+                    except Exception:
+                        pass
                     # fall through to generic HTTP
                     pass
         # RSS/Podcast feed: attempt to resolve first enclosure
-        if s.endswith('.xml') or 'rss' in s.lower() or 'feed' in s.lower():
+        if s.endswith(".xml") or "rss" in s.lower() or "feed" in s.lower():
             try:
                 import xml.etree.ElementTree as ET
+
                 r = _require_requests().get(s, timeout=30)
                 r.raise_for_status()
                 root = ET.fromstring(r.text)
                 # Try common namespaces
                 enclosure_url = None
-                for item in root.iter('item'):
-                    enc = item.find('enclosure')
-                    if enc is not None and enc.get('url'):
-                        enclosure_url = enc.get('url')
+                for item in root.iter("item"):
+                    enc = item.find("enclosure")
+                    if enc is not None and enc.get("url"):
+                        enclosure_url = enc.get("url")
                         break
                 if enclosure_url:
                     return ensure_local_audio(enclosure_url)
@@ -149,7 +159,11 @@ def ensure_local_audio(source: Union[str, os.PathLike]) -> str:
                         if verbose and total:
                             sofar += len(chunk)
                             pct = int(sofar * 100 / total)
-                            print(f"Downloading... {pct}%", end="\r", file=__import__('sys').stderr)
+                            print(
+                                f"Downloading... {pct}%",
+                                end="\r",
+                                file=__import__("sys").stderr,
+                            )
         except Exception:
             # Clean up partially written file
             try:
@@ -195,14 +209,14 @@ def _try_enrich_id3(lp: LocalAudioPath) -> None:
         tags = ID3(str(lp))
         title = tags.get("TIT2")
         artist = tags.get("TPE1")
-        if title and getattr(title, 'text', None):
-            setattr(lp, "id3_title", str(title.text[0]))
-        if artist and getattr(artist, 'text', None):
-            setattr(lp, "id3_artist", str(artist.text[0]))
+        if title and getattr(title, "text", None):
+            lp.id3_title = str(title.text[0])
+        if artist and getattr(artist, "text", None):
+            lp.id3_artist = str(artist.text[0])
         for k in (k for k in tags.keys() if k.startswith("APIC")):
             apic = tags.get(k)
-            if apic and getattr(apic, 'data', None):
-                setattr(lp, "cover_image_bytes", bytes(apic.data))
+            if apic and getattr(apic, "data", None):
+                lp.cover_image_bytes = bytes(apic.data)
                 break
     except Exception:
         return

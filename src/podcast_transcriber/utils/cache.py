@@ -6,7 +6,9 @@ from typing import Optional, Tuple
 
 
 def _default_cache_dir() -> Path:
-    base = os.environ.get("PODCAST_TRANSCRIBER_CACHE") or os.path.join(Path.home(), ".cache", "podcast_transcriber")
+    base = os.environ.get("PODCAST_TRANSCRIBER_CACHE") or os.path.join(
+        Path.home(), ".cache", "podcast_transcriber"
+    )
     p = Path(base)
     p.mkdir(parents=True, exist_ok=True)
     return p
@@ -47,7 +49,8 @@ def set(cache_dir: Optional[str], key: str, payload: dict) -> None:
     dirp.mkdir(parents=True, exist_ok=True)
     p = dirp / f"{key}.json"
     try:
-        p.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        p.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     except Exception:
         pass
-
