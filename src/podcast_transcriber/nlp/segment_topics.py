@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 
 def segment_by_simple_rules(text: str, max_chars: int = 4000) -> List[Dict[str, str]]:

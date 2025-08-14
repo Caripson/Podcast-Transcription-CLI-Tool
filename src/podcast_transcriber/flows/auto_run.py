@@ -5,9 +5,8 @@ import logging
 import os
 from datetime import datetime
 
-from ..orchestrator import load_yaml_config, cmd_ingest, cmd_process, cmd_send
+from ..orchestrator import cmd_ingest, cmd_process, cmd_send, load_yaml_config
 from ..storage.state import StateStore
-
 
 log = logging.getLogger("podcast.auto_run")
 

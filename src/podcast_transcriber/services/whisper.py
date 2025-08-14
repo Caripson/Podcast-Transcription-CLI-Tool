@@ -1,5 +1,5 @@
 import shutil
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
 from .base import TranscriptionService
 
@@ -34,7 +34,9 @@ class WhisperService(TranscriptionService):
 
         if self.chunk_seconds:
             # Chunk with ffmpeg into temp dir and merge results with offsets
-            import tempfile, os, subprocess
+            import os
+            import subprocess
+            import tempfile
             from pathlib import Path
             tempdir = tempfile.mkdtemp(prefix="wchunks_")
             pat = os.path.join(tempdir, "chunk_%05d.wav")

@@ -2,9 +2,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import services
+from . import __credits__, __version__, services
 from .utils.downloader import ensure_local_audio
-from . import __version__, __credits__
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -314,7 +313,11 @@ def main(argv=None) -> int:
     try:
         # Batch mode
         if args.input_file:
-            from .exporters import export_transcript, export_book, infer_format_from_path
+            from .exporters import (
+                export_book,
+                export_transcript,
+                infer_format_from_path,
+            )
             srcs = [s.strip() for s in Path(args.input_file).read_text(encoding="utf-8").splitlines() if s.strip()]
             # Combine all into a single book
             if args.combine_into:
