@@ -24,7 +24,7 @@
 - Python 3.9+, PEP 8 (4-space indent). Prefer type hints in public APIs.
 - Naming: `snake_case` for functions/vars, `PascalCase` for classes, `UPPER_SNAKE_CASE` for constants.
 - Keep CLIs thin; push logic into modules under `src/podcast_transcriber/`. Keep services pluggable via `project.entry-points`.
-- Formatting: Black (`make fmt`, `make fmt-check`). Linting: Ruff (`make lint`, `make lint-fix`). Config in `pyproject.toml`.
+- Formatting: Ruff formatter (`make fmt`, `make fmt-check`). Linting: Ruff (`make lint`, `make lint-fix`). Config in `pyproject.toml`.
 
 ## Testing Guidelines
 - Framework: `pytest`. Place tests in `tests/` and name `test_*.py` with functions `test_*`.

@@ -7,8 +7,8 @@ help:
 	@echo "  make venv            # create .venv"
 	@echo "  make dev             # install dev deps (editable)"
 	@echo "  make test            # run pytest"
-	@echo "  make fmt             # python -m black src tests"
-	@echo "  make fmt-check       # python -m black --check"
+	@echo "  make fmt             # python -m ruff format src tests"
+	@echo "  make fmt-check       # python -m ruff format --check src tests"
 	@echo "  make lint            # python -m ruff check"
 	@echo "  make lint-fix        # python -m ruff check --fix"
 	@echo "  make smoke           # run smoke script"
@@ -37,10 +37,10 @@ coverage-html:
 	python -m pytest --cov=podcast_transcriber --cov-report=html --cov-report=term-missing:skip-covered --cov-report=xml
 
 fmt:
-	python -m black src tests || (echo "Black not found. Install dev deps: pip install -e .[dev]" && exit 1)
+	python -m ruff format src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)
 
 fmt-check:
-	python -m black --check src tests || (echo "Formatting issues or Black missing. Install dev deps: pip install -e .[dev]" && exit 1)
+	python -m ruff format --check src tests || (echo "Formatting issues or Ruff missing. Install dev deps: pip install -e .[dev]" && exit 1)
 
 lint:
 	python -m ruff check src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)
