@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 def test_cmd_send_emails_artifacts(monkeypatch, tmp_path):
