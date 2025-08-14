@@ -80,3 +80,23 @@ ignore = [
   "UP035", # typing.* deprecated aliases optional for now
   "I001",  # import sort minor friction; handled gradually
 ]
+
+[tool.coverage.run]
+branch = true
+source = ["podcast_transcriber"]
+omit = [
+  "src/podcast_transcriber/__main__.py",
+  "src/podcast_transcriber/exporters/themes.py",
+  "src/podcast_transcriber/services/whisper.py",
+  "src/podcast_transcriber/delivery/send_to_kindle.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+  "except Exception:",
+  "pass",
+]

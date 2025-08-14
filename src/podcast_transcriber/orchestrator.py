@@ -21,7 +21,9 @@ def load_yaml_config(path: str) -> dict:
     try:
         import yaml  # type: ignore
     except Exception as e:
-        raise SystemExit("PyYAML is required for --config. Install with: pip install pyyaml") from e
+        raise SystemExit(
+            "PyYAML is required for --config. Install with: pip install pyyaml"
+        ) from e
     p = Path(path)
     if not p.exists():
         raise SystemExit(f"Config file not found: {path}")
@@ -31,11 +33,28 @@ def load_yaml_config(path: str) -> dict:
 def pick_quality_settings(quality: str) -> dict:
     q = (quality or "standard").lower()
     if q in ("quick", "snabb", "fast"):
-        return {"whisper_model": "base", "diarization": 0, "summarize": False, "chapter_minutes": None}
+        return {
+            "whisper_model": "base",
+            "diarization": 0,
+            "summarize": False,
+            "chapter_minutes": None,
+        }
     if q in ("premium",):
-        return {"whisper_model": "large", "diarization": 2, "summarize": True, "chapter_minutes": None, "translate": False, "topic_segmentation": True}
+        return {
+            "whisper_model": "large",
+            "diarization": 2,
+            "summarize": True,
+            "chapter_minutes": None,
+            "translate": False,
+            "topic_segmentation": True,
+        }
     # default: standard
-    return {"whisper_model": "small", "diarization": 0, "summarize": True, "chapter_minutes": 10}
+    return {
+        "whisper_model": "small",
+        "diarization": 0,
+        "summarize": True,
+        "chapter_minutes": 10,
+    }
 
 
 def cmd_ingest(args) -> int:
@@ -53,11 +72,23 @@ def cmd_ingest(args) -> int:
     return 0
 
 
-def _process_episode(ep: dict, service_name: str, quality: str, language: Optional[str], nlp_cfg: Optional[dict] = None) -> dict:
+def _process_episode(
+    ep: dict,
+    service_name: str,
+    quality: str,
+    language: Optional[str],
+    nlp_cfg: Optional[dict] = None,
+) -> dict:
     qs = pick_quality_settings(quality)
     service = services.get_service(service_name)
-    if service_name == "whisper" and getattr(services, "WhisperService", None) is not None and isinstance(service, services.WhisperService):
-        service.model_name = qs.get("whisper_model") or getattr(service, "model_name", None)
+    if (
+        service_name == "whisper"
+        and getattr(services, "WhisperService", None) is not None
+        and isinstance(service, services.WhisperService)
+    ):
+        service.model_name = qs.get("whisper_model") or getattr(
+            service, "model_name", None
+        )
         service.translate = bool(qs.get("translate", False))
     if qs.get("diarization", 0) and service_name in ("aws", "gcp"):
         try:
@@ -76,7 +107,9 @@ def _process_episode(ep: dict, service_name: str, quality: str, language: Option
     # basic chapterization by minutes when segments available
     chapters = []
     # NLP: semantic topic segmentation when configured
-    use_semantic = bool((nlp_cfg or {}).get("semantic")) or bool(qs.get("topic_segmentation"))
+    use_semantic = bool((nlp_cfg or {}).get("semantic")) or bool(
+        qs.get("topic_segmentation")
+    )
     if use_semantic:
         try:
             topics = segment_with_embeddings(text)
@@ -94,10 +127,14 @@ def _process_episode(ep: dict, service_name: str, quality: str, language: Option
             bucket.append(s.get("text", ""))
             bucket_chars += len(bucket[-1])
             if (s.get("end", 0.0) - start_time) >= mins * 60 or bucket_chars > 4000:
-                chapters.append({"title": f"Chapter {len(chapters)+1}", "text": " ".join(bucket)})
+                chapters.append(
+                    {"title": f"Chapter {len(chapters) + 1}", "text": " ".join(bucket)}
+                )
                 bucket, bucket_chars, start_time = [], 0, None
         if bucket:
-            chapters.append({"title": f"Chapter {len(chapters)+1}", "text": " ".join(bucket)})
+            chapters.append(
+                {"title": f"Chapter {len(chapters) + 1}", "text": " ".join(bucket)}
+            )
     else:
         chapters = [{"title": ep.get("title") or "Transcript", "text": text}]
     # Enrich with key takeaways if NLP enabled
@@ -112,7 +149,12 @@ def _process_episode(ep: dict, service_name: str, quality: str, language: Option
             takeaways = None
     else:
         takeaways = None
-    return {"text": text, "chapters": chapters, "summary": summary, "takeaways": takeaways}
+    return {
+        "text": text,
+        "chapters": chapters,
+        "summary": summary,
+        "takeaways": takeaways,
+    }
 
 
 def cmd_process(args) -> int:
@@ -133,7 +175,9 @@ def cmd_process(args) -> int:
         nlp_cfg = dict(nlp_cfg)
         nlp_cfg["semantic"] = True
     emit_md = bool(cfg.get("emit_markdown"))
-    md_template = cfg.get("markdown_template") or str(Path(__file__).resolve().parent / "templates" / "ebook.md.j2")
+    md_template = cfg.get("markdown_template") or str(
+        Path(__file__).resolve().parent / "templates" / "ebook.md.j2"
+    )
     for ep in job.get("episodes", []):
         res = _process_episode(ep, service_name, quality, language, nlp_cfg=nlp_cfg)
         # Build document
@@ -144,13 +188,20 @@ def cmd_process(args) -> int:
         if bilingual and service_name == "whisper":
             try:
                 svc_tr = services.get_service("whisper")
-                if getattr(services, "WhisperService", None) is not None and isinstance(svc_tr, services.WhisperService):
+                if getattr(services, "WhisperService", None) is not None and isinstance(
+                    svc_tr, services.WhisperService
+                ):
                     svc_tr.translate = True
                 text_tr = svc_tr.transcribe(ensure_local_audio(ep["source"]))
-                chapters = [Chapter("Original", "\n\n".join(c.text for c in chapters)), Chapter("Translated", text_tr)]
+                chapters = [
+                    Chapter("Original", "\n\n".join(c.text for c in chapters)),
+                    Chapter("Translated", text_tr),
+                ]
             except Exception:
                 pass
-        doc = Document(title=title, author=author, chapters=chapters, summary=res.get("summary"))
+        doc = Document(
+            title=title, author=author, chapters=chapters, summary=res.get("summary")
+        )
         out_path = out_dir / f"{Path(ep.get('slug') or title).stem}.epub"
         export_book(
             chapters=[{"title": ch.title, "text": ch.text} for ch in doc.chapters],
@@ -167,16 +218,21 @@ def cmd_process(args) -> int:
         )
         # Optional: emit companion Markdown using Jinja2 template
         if emit_md:
-            md_path = out_path.with_suffix('.md')
+            md_path = out_path.with_suffix(".md")
             try:
-                md_text = render_markdown(md_template, {
-                    "title": doc.title,
-                    "author": doc.author,
-                    "summary": doc.summary,
-                    "topics": [ch.title for ch in doc.chapters],
-                    "takeaways": res.get("takeaways"),
-                    "chapters": [{"title": ch.title, "text": ch.text} for ch in doc.chapters],
-                })
+                md_text = render_markdown(
+                    md_template,
+                    {
+                        "title": doc.title,
+                        "author": doc.author,
+                        "summary": doc.summary,
+                        "topics": [ch.title for ch in doc.chapters],
+                        "takeaways": res.get("takeaways"),
+                        "chapters": [
+                            {"title": ch.title, "text": ch.text} for ch in doc.chapters
+                        ],
+                    },
+                )
             except Exception:
                 # Fallback: minimal Markdown without Jinja2 dependency
                 lines = []
@@ -199,7 +255,7 @@ def cmd_process(args) -> int:
                 for ch in doc.chapters:
                     lines += [f"## {ch.title}", "", ch.text, ""]
                 md_text = "\n".join(lines).rstrip() + "\n"
-            md_path.write_text(md_text, encoding='utf-8')
+            md_path.write_text(md_text, encoding="utf-8")
         processed.append({"episode": ep, "output": str(out_path)})
     job["artifacts"] = processed
     job["status"] = "processed"
@@ -213,10 +269,16 @@ def cmd_send(args) -> int:
     job = store.get_job(args.job_id)
     if not job:
         raise SystemExit(f"Unknown job id: {args.job_id}")
-    to_email = job.get("config", {}).get("kindle", {}).get("to_email") or os.environ.get("KINDLE_TO_EMAIL")
-    from_email = job.get("config", {}).get("kindle", {}).get("from_email") or os.environ.get("KINDLE_FROM_EMAIL")
+    to_email = job.get("config", {}).get("kindle", {}).get(
+        "to_email"
+    ) or os.environ.get("KINDLE_TO_EMAIL")
+    from_email = job.get("config", {}).get("kindle", {}).get(
+        "from_email"
+    ) or os.environ.get("KINDLE_FROM_EMAIL")
     if not to_email or not from_email:
-        raise SystemExit("Missing Kindle to/from email. Set in config.yml under kindle or via env KINDLE_TO_EMAIL/KINDLE_FROM_EMAIL")
+        raise SystemExit(
+            "Missing Kindle to/from email. Set in config.yml under kindle or via env KINDLE_TO_EMAIL/KINDLE_FROM_EMAIL"
+        )
     smtp_cfg = job.get("config", {}).get("smtp", {})
     host = smtp_cfg.get("host") or os.environ.get("SMTP_HOST")
     port = int(smtp_cfg.get("port") or os.environ.get("SMTP_PORT") or 587)
@@ -224,7 +286,9 @@ def cmd_send(args) -> int:
     # Enforce password via env var only for safety
     password = os.environ.get(smtp_cfg.get("pass_env", "SMTP_PASS"))
     if not host or not user or not password:
-        raise SystemExit("SMTP credentials missing. Provide SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASS (or pass_env) env vars.")
+        raise SystemExit(
+            "SMTP credentials missing. Provide SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASS (or pass_env) env vars."
+        )
     artifacts = job.get("artifacts", [])
     if not artifacts:
         raise SystemExit("No artifacts to send. Run process first.")
@@ -270,27 +334,43 @@ def cmd_digest(args) -> int:
     chapters = []
     for ep in recent:
         text = ep.get("last_text") or "(no transcript cached)"
-        chapters.append({"title": ep.get("title") or ep.get("slug") or "Episode", "text": text})
+        chapters.append(
+            {"title": ep.get("title") or ep.get("slug") or "Episode", "text": text}
+        )
     out_dir = Path("./out")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"digest-{datetime.utcnow().date()}.epub"
-    export_book(chapters, str(out_path), fmt="epub", title=f"{args.feed or 'Podcast'} Weekly Digest")
+    export_book(
+        chapters,
+        str(out_path),
+        fmt="epub",
+        title=f"{args.feed or 'Podcast'} Weekly Digest",
+    )
     print(str(out_path))
     return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="podcast-cli", description="Orchestrates podcast ingestion → EPUB → Kindle delivery")
+    p = argparse.ArgumentParser(
+        prog="podcast-cli",
+        description="Orchestrates podcast ingestion → EPUB → Kindle delivery",
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
 
     ing = sub.add_parser("ingest", help="Discover new episodes and create a job")
     ing.add_argument("--config", required=True, help="Path to YAML config")
-    ing.add_argument("--feed", default=None, help="Optional feed name to limit ingestion")
+    ing.add_argument(
+        "--feed", default=None, help="Optional feed name to limit ingestion"
+    )
     ing.set_defaults(func=cmd_ingest)
 
     proc = sub.add_parser("process", help="Transcribe and build EPUB for a job")
     proc.add_argument("--job-id", required=True)
-    proc.add_argument("--semantic", action="store_true", help="Enable semantic topic segmentation for this run")
+    proc.add_argument(
+        "--semantic",
+        action="store_true",
+        help="Enable semantic topic segmentation for this run",
+    )
     proc.set_defaults(func=cmd_process)
 
     snd = sub.add_parser("send", help="Email EPUB to Kindle for a job")
@@ -315,6 +395,7 @@ def main(argv=None) -> int:
     # Load .env if python-dotenv is available (optional convenience)
     try:
         import dotenv  # type: ignore
+
         dotenv.load_dotenv()  # loads from .env in CWD if present
     except Exception:
         pass

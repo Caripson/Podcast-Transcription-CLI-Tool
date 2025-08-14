@@ -6,7 +6,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-STATE_DIR = Path(os.environ.get("PODCAST_STATE_DIR", str(Path.home() / ".local/state/podcast_transcriber")))
+STATE_DIR = Path(
+    os.environ.get(
+        "PODCAST_STATE_DIR", str(Path.home() / ".local/state/podcast_transcriber")
+    )
+)
 STATE_DIR.mkdir(parents=True, exist_ok=True)
 STATE_PATH = STATE_DIR / "state.json"
 
@@ -29,7 +33,9 @@ class StateStore:
             self.state = {"jobs": [], "episodes": [], "seen": {}}
 
     def _save(self):
-        STATE_PATH.write_text(json.dumps(self.state, ensure_ascii=False, indent=2), encoding="utf-8")
+        STATE_PATH.write_text(
+            json.dumps(self.state, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
     def create_job(self, config: dict[str, Any], feed_name: str | None = None) -> dict:
         job_id = f"job-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
@@ -46,7 +52,9 @@ class StateStore:
         self._save()
         return job
 
-    def create_job_with_episodes(self, config: dict[str, Any], episodes: list[dict]) -> dict:
+    def create_job_with_episodes(
+        self, config: dict[str, Any], episodes: list[dict]
+    ) -> dict:
         job = self.create_job(config)
         job["episodes"] = episodes
         self.save_job(job)

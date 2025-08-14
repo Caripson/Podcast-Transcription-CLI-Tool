@@ -36,6 +36,7 @@ def _discover_plugins() -> dict:
     try:
         # Python 3.10+: entry_points returns Selection
         from importlib.metadata import entry_points
+
         try:
             eps = entry_points(group="podcast_transcriber.services")
         except TypeError:
@@ -66,12 +67,15 @@ def get_service(name: str) -> TranscriptionService:
         try:
             if name == "whisper":
                 from .whisper import WhisperService as _WS  # type: ignore
+
                 return _WS()  # type: ignore[call-arg]
             if name == "aws":
                 from .aws_transcribe import AWSTranscribeService as _AWS  # type: ignore
+
                 return _AWS()  # type: ignore[call-arg]
             if name == "gcp":
                 from .gcp_speech import GCPSpeechService as _GCP  # type: ignore
+
                 return _GCP()  # type: ignore[call-arg]
         except Exception as e:  # pragma: no cover
             raise RuntimeError(
@@ -88,5 +92,7 @@ def get_service(name: str) -> TranscriptionService:
         pass
     inst = plugin()  # type: ignore[operator]
     if not isinstance(inst, TranscriptionService):
-        raise TypeError(f"Plugin '{name}' did not return a TranscriptionService instance")
+        raise TypeError(
+            f"Plugin '{name}' did not return a TranscriptionService instance"
+        )
     return inst

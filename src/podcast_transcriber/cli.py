@@ -33,8 +33,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Hint language code (e.g. 'sv', 'en-US') where supported",
     )
     # AWS overrides
-    p.add_argument("--aws-bucket", default=None, help="AWS S3 bucket for Transcribe input/output")
-    p.add_argument("--aws-region", default=None, help="AWS region for Transcribe (overrides AWS_REGION)")
+    p.add_argument(
+        "--aws-bucket", default=None, help="AWS S3 bucket for Transcribe input/output"
+    )
+    p.add_argument(
+        "--aws-region",
+        default=None,
+        help="AWS region for Transcribe (overrides AWS_REGION)",
+    )
     # Language detection toggle
     p.add_argument(
         "--auto-language",
@@ -52,48 +58,135 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Comma-separated list of alternative language codes for GCP (used if provided)",
     )
-    p.add_argument("--output", default=None, help="Output file path; defaults to stdout")
+    p.add_argument(
+        "--output", default=None, help="Output file path; defaults to stdout"
+    )
     p.add_argument(
         "--format",
         default=None,
-        choices=["txt","pdf","epub","mobi","azw","azw3","kfx","srt","vtt","json","md"],
+        choices=[
+            "txt",
+            "pdf",
+            "epub",
+            "mobi",
+            "azw",
+            "azw3",
+            "kfx",
+            "srt",
+            "vtt",
+            "json",
+            "md",
+        ],
         help="Output format. If not provided, inferred from --output extension or defaults to txt.",
     )
-    p.add_argument("--title", default=None, help="Document title metadata (for EPUB/PDF/Kindle)")
-    p.add_argument("--author", default=None, help="Author metadata (for EPUB/PDF/Kindle)")
+    p.add_argument(
+        "--title", default=None, help="Document title metadata (for EPUB/PDF/Kindle)"
+    )
+    p.add_argument(
+        "--author", default=None, help="Author metadata (for EPUB/PDF/Kindle)"
+    )
     # KDP-oriented metadata
     p.add_argument("--subtitle", default=None, help="Subtitle (KDP/EPUB metadata)")
-    p.add_argument("--description", default=None, help="Long description/blurb (KDP/EPUB metadata)")
-    p.add_argument("--keywords", default=None, help="Comma-separated keywords (KDP/EPUB metadata)")
+    p.add_argument(
+        "--description", default=None, help="Long description/blurb (KDP/EPUB metadata)"
+    )
+    p.add_argument(
+        "--keywords", default=None, help="Comma-separated keywords (KDP/EPUB metadata)"
+    )
     p.add_argument("--series-title", default=None, help="Series title (KDP metadata)")
-    p.add_argument("--volume-number", type=str, default=None, help="Series volume number (KDP metadata)")
+    p.add_argument(
+        "--volume-number",
+        type=str,
+        default=None,
+        help="Series volume number (KDP metadata)",
+    )
     # Utility
-    p.add_argument("--credits", action="store_true", help="Show maintainer credits and exit")
-    p.add_argument("--cover-image", default=None, help="Cover image path for EPUB/Kindle exports")
-    p.add_argument("--auto-toc", action="store_true", help="Generate a simple TOC (PDF/EPUB) from segments if available")
+    p.add_argument(
+        "--credits", action="store_true", help="Show maintainer credits and exit"
+    )
+    p.add_argument(
+        "--cover-image", default=None, help="Cover image path for EPUB/Kindle exports"
+    )
+    p.add_argument(
+        "--auto-toc",
+        action="store_true",
+        help="Generate a simple TOC (PDF/EPUB) from segments if available",
+    )
     # Diarization
-    p.add_argument("--speakers", type=int, default=None, help="Enable speaker diarization with up to N speakers (AWS/GCP)")
+    p.add_argument(
+        "--speakers",
+        type=int,
+        default=None,
+        help="Enable speaker diarization with up to N speakers (AWS/GCP)",
+    )
     # Whisper extras
-    p.add_argument("--chunk-seconds", type=int, default=None, help="Split long audio for Whisper into N-second chunks")
-    p.add_argument("--translate", action="store_true", help="Use Whisper translate task (to English)")
+    p.add_argument(
+        "--chunk-seconds",
+        type=int,
+        default=None,
+        help="Split long audio for Whisper into N-second chunks",
+    )
+    p.add_argument(
+        "--translate",
+        action="store_true",
+        help="Use Whisper translate task (to English)",
+    )
     # Batch and config
-    p.add_argument("--input-file", default=None, help="Path to a text file with URLs/paths to process one per line")
-    p.add_argument("--combine-into", default=None, help="Combine all inputs into a single book at this output path (requires --input-file)")
-    p.add_argument("--config", default=None, help="Path to a TOML config file with default arguments (auto-discovers in ~/.config/podcast-transcriber/config.toml)")
-    p.add_argument("--interactive", action="store_true", help="Interactive mode: guided prompts for common options")
-    p.add_argument("--kdp", action="store_true", help="Enable KDP pipeline defaults (normalize, EPUB with TOC, metadata)")
+    p.add_argument(
+        "--input-file",
+        default=None,
+        help="Path to a text file with URLs/paths to process one per line",
+    )
+    p.add_argument(
+        "--combine-into",
+        default=None,
+        help="Combine all inputs into a single book at this output path (requires --input-file)",
+    )
+    p.add_argument(
+        "--config",
+        default=None,
+        help="Path to a TOML config file with default arguments (auto-discovers in ~/.config/podcast-transcriber/config.toml)",
+    )
+    p.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Interactive mode: guided prompts for common options",
+    )
+    p.add_argument(
+        "--kdp",
+        action="store_true",
+        help="Enable KDP pipeline defaults (normalize, EPUB with TOC, metadata)",
+    )
     p.add_argument("--verbose", action="store_true", help="Verbose output")
     p.add_argument("--quiet", action="store_true", help="Suppress non-error output")
     # Post-processing
-    p.add_argument("--normalize", action="store_true", help="Normalize whitespace and paragraphs in output text")
-    p.add_argument("--summarize", type=int, default=None, help="Summarize to N sentences (naive)")
+    p.add_argument(
+        "--normalize",
+        action="store_true",
+        help="Normalize whitespace and paragraphs in output text",
+    )
+    p.add_argument(
+        "--summarize", type=int, default=None, help="Summarize to N sentences (naive)"
+    )
     # Cache
-    p.add_argument("--cache-dir", default=None, help="Directory for transcript cache (default: ~/.cache/podcast_transcriber)")
-    p.add_argument("--no-cache", action="store_true", help="Disable transcript cache lookup/save")
+    p.add_argument(
+        "--cache-dir",
+        default=None,
+        help="Directory for transcript cache (default: ~/.cache/podcast_transcriber)",
+    )
+    p.add_argument(
+        "--no-cache", action="store_true", help="Disable transcript cache lookup/save"
+    )
     # PDF options
-    p.add_argument("--pdf-font", default="Arial", help="PDF font family (default: Arial)")
-    p.add_argument("--pdf-font-size", type=int, default=12, help="PDF font size (default: 12)")
-    p.add_argument("--pdf-margin", type=int, default=15, help="PDF margin in mm (default: 15)")
+    p.add_argument(
+        "--pdf-font", default="Arial", help="PDF font family (default: Arial)"
+    )
+    p.add_argument(
+        "--pdf-font-size", type=int, default=12, help="PDF font size (default: 12)"
+    )
+    p.add_argument(
+        "--pdf-margin", type=int, default=15, help="PDF margin in mm (default: 15)"
+    )
     p.add_argument(
         "--pdf-page-size",
         choices=["A4", "Letter"],
@@ -122,7 +215,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Do not mix text on the cover page; start transcript on a new page",
     )
     # EPUB options
-    p.add_argument("--epub-css-file", default=None, help="Path to a CSS file to embed in EPUB/Kindle")
+    p.add_argument(
+        "--epub-css-file",
+        default=None,
+        help="Path to a CSS file to embed in EPUB/Kindle",
+    )
     # EPUB theme selection; allow built-ins or custom:/path.css
     p.add_argument(
         "--epub-theme",
@@ -142,7 +239,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Do not delete uploaded S3 object after AWS Transcribe job completes",
     )
     # GCP advanced
-    p.add_argument("--gcp-longrunning", action="store_true", help="Use long_running_recognize for long audio (GCP)")
+    p.add_argument(
+        "--gcp-longrunning",
+        action="store_true",
+        help="Use long_running_recognize for long audio (GCP)",
+    )
     return p
 
 
@@ -155,14 +256,17 @@ def _load_config(path: str) -> dict:
         except Exception:
             return {}
     from pathlib import Path
+
     p = Path(path)
     if not p.exists():
         return {}
     return tomllib.loads(p.read_text(encoding="utf-8"))
 
+
 def _discover_default_config() -> Optional[str]:
     # Priority: env var, XDG, ~/.config, legacy home file
     import os
+
     env = os.environ.get("PODCAST_TRANSCRIBER_CONFIG")
     if env and Path(env).exists():
         return env
@@ -204,6 +308,7 @@ def _interactive_fill_args(args: argparse.Namespace) -> None:
                 args.service = sel
     # Format
     from .exporters.exporter import SUPPORTED_FORMATS
+
     if not args.format:
         print(f"Available formats: {', '.join(sorted(SUPPORTED_FORMATS))}")
         args.format = _inp("Which output format do you want?", default="txt")
@@ -214,7 +319,9 @@ def _interactive_fill_args(args: argparse.Namespace) -> None:
     if args.format != "txt" and not args.output:
         args.output = _inp("Output file path? (required for non-txt)")
     elif args.format == "txt" and not args.output:
-        args.output = _inp("Output file path? (empty = write to stdout)", default="") or None
+        args.output = (
+            _inp("Output file path? (empty = write to stdout)", default="") or None
+        )
     # Language optional
     if not args.language:
         lang = _inp("Language code? (e.g., sv, en-US)", default="")
@@ -226,7 +333,9 @@ def main(argv=None) -> int:
         argv = sys.argv[1:]
     # Early utility action before enforcing required args
     if "--credits" in argv:
-        sys.stdout.write("Podcast Transcription CLI Tool — Developed by Johan Caripson\n")
+        sys.stdout.write(
+            "Podcast Transcription CLI Tool — Developed by Johan Caripson\n"
+        )
         return 0
     args = build_parser().parse_args(argv)
     # If interactive, collect essentials before validation
@@ -238,13 +347,31 @@ def main(argv=None) -> int:
         cfg = _load_config(cfg_path)
         # Only fill missing simple scalars
         for key in [
-            "language","aws_bucket","aws_region","aws_language_options","gcp_alt_languages",
-            "format","title","subtitle","author","description","keywords","cover_image","epub_css_file","epub_theme","series_title","volume_number",
-            "whisper_model","chunk_seconds","translate","speakers","aws_keep",
+            "language",
+            "aws_bucket",
+            "aws_region",
+            "aws_language_options",
+            "gcp_alt_languages",
+            "format",
+            "title",
+            "subtitle",
+            "author",
+            "description",
+            "keywords",
+            "cover_image",
+            "epub_css_file",
+            "epub_theme",
+            "series_title",
+            "volume_number",
+            "whisper_model",
+            "chunk_seconds",
+            "translate",
+            "speakers",
+            "aws_keep",
         ]:
-            if getattr(args, key.replace("-","_"), None) in (None, False):
+            if getattr(args, key.replace("-", "_"), None) in (None, False):
                 if key in cfg:
-                    setattr(args, key.replace("-","_"), cfg[key])
+                    setattr(args, key.replace("-", "_"), cfg[key])
         # If URL/service still missing and config provides them, pick up
         for key in ["url", "service", "output"]:
             if getattr(args, key, None) in (None, "") and key in cfg:
@@ -259,13 +386,16 @@ def main(argv=None) -> int:
     # Downloader verbosity
     if args.verbose:
         import os as _os
+
         _os.environ["PODCAST_TRANSCRIBER_VERBOSE"] = "1"
 
     # KDP pipeline defaults
     if args.kdp:
         if not args.format:
             args.format = "epub"
-        args.normalize = True if not getattr(args, "normalize", False) else args.normalize
+        args.normalize = (
+            True if not getattr(args, "normalize", False) else args.normalize
+        )
         args.auto_toc = True if not getattr(args, "auto_toc", False) else args.auto_toc
     # Resolve local path (download if URL)
     local_path = ensure_local_audio(args.url)
@@ -274,13 +404,27 @@ def main(argv=None) -> int:
     service = services.get_service(args.service)
     # Respect monkeypatched/custom services in tests by only tweaking
     # configuration if the instance is of the expected type.
-    if args.service == "whisper" and getattr(services, "WhisperService", None) is not None and isinstance(service, services.WhisperService):
+    if (
+        args.service == "whisper"
+        and getattr(services, "WhisperService", None) is not None
+        and isinstance(service, services.WhisperService)
+    ):
         if args.whisper_model:
             service.model_name = args.whisper_model
         service.translate = bool(args.translate)
         service.chunk_seconds = args.chunk_seconds
-    elif args.service == "aws" and getattr(services, "AWSTranscribeService", None) is not None and isinstance(service, services.AWSTranscribeService) and (
-        args.aws_bucket or args.aws_region or args.auto_language or args.aws_language_options or args.aws_keep or args.speakers
+    elif (
+        args.service == "aws"
+        and getattr(services, "AWSTranscribeService", None) is not None
+        and isinstance(service, services.AWSTranscribeService)
+        and (
+            args.aws_bucket
+            or args.aws_region
+            or args.auto_language
+            or args.aws_language_options
+            or args.aws_keep
+            or args.speakers
+        )
     ):
         lang_opts = (
             [s.strip() for s in args.aws_language_options.split(",") if s.strip()]
@@ -296,7 +440,11 @@ def main(argv=None) -> int:
             keep=args.aws_keep,
             speakers=args.speakers,
         )
-    elif args.service == "gcp" and getattr(services, "GCPSpeechService", None) is not None and isinstance(service, services.GCPSpeechService):
+    elif (
+        args.service == "gcp"
+        and getattr(services, "GCPSpeechService", None) is not None
+        and isinstance(service, services.GCPSpeechService)
+    ):
         alt_langs = (
             [s.strip() for s in args.gcp_alt_languages.split(",") if s.strip()]
             if args.gcp_alt_languages
@@ -315,7 +463,12 @@ def main(argv=None) -> int:
                 export_transcript,
                 infer_format_from_path,
             )
-            srcs = [s.strip() for s in Path(args.input_file).read_text(encoding="utf-8").splitlines() if s.strip()]
+
+            srcs = [
+                s.strip()
+                for s in Path(args.input_file).read_text(encoding="utf-8").splitlines()
+                if s.strip()
+            ]
             # Combine all into a single book
             if args.combine_into:
                 chapters = []
@@ -325,9 +478,14 @@ def main(argv=None) -> int:
                     txt = service.transcribe(lp, language=args.language)
                     if args.normalize:
                         from .utils.textproc import normalize_text as _norm
+
                         txt = _norm(txt)
                     # Title for chapter
-                    ch_title = getattr(lp, "id3_title", None) or getattr(lp, "source_title", None) or Path(src).stem
+                    ch_title = (
+                        getattr(lp, "id3_title", None)
+                        or getattr(lp, "source_title", None)
+                        or Path(src).stem
+                    )
                     chapters.append({"title": ch_title, "text": txt})
                     if not args.cover_image and cover_bytes is None:
                         cover_bytes = getattr(lp, "cover_image_bytes", None)
@@ -336,6 +494,7 @@ def main(argv=None) -> int:
                             if cover_url:
                                 try:
                                     import requests as _rq
+
                                     r = _rq.get(cover_url, timeout=20)
                                     r.raise_for_status()
                                     cover_bytes = r.content
@@ -347,7 +506,10 @@ def main(argv=None) -> int:
                 md = {
                     "language": args.language,
                     "description": args.description,
-                    "keywords": [s.strip() for s in (args.keywords or '').split(',') if s.strip()] or None,
+                    "keywords": [
+                        s.strip() for s in (args.keywords or "").split(",") if s.strip()
+                    ]
+                    or None,
                     "series_title": args.series_title,
                     "volume_number": args.volume_number,
                     "subtitle": args.subtitle,
@@ -366,7 +528,9 @@ def main(argv=None) -> int:
                 )
             else:
                 if not args.output:
-                    raise SystemExit("--output directory is required for --input-file batch mode (or use --combine-into)")
+                    raise SystemExit(
+                        "--output directory is required for --input-file batch mode (or use --combine-into)"
+                    )
                 out_dir = Path(args.output)
                 out_dir.mkdir(parents=True, exist_ok=True)
                 for src in srcs:
@@ -376,9 +540,12 @@ def main(argv=None) -> int:
                     words = getattr(service, "last_words", None)
                     if args.normalize:
                         from .utils.textproc import normalize_text as _norm
+
                         txt = _norm(txt)
                     name = Path(src).stem or "item"
-                    fmt = args.format or infer_format_from_path(str(args.output)) or "txt"
+                    fmt = (
+                        args.format or infer_format_from_path(str(args.output)) or "txt"
+                    )
                     out_path = out_dir / f"{name}.{fmt}"
                     export_transcript(
                         txt,
@@ -408,13 +575,22 @@ def main(argv=None) -> int:
         if not args.input_file and not args.no_cache:
             try:
                 from .utils import cache as _cache
+
                 cache_key = _cache.compute_key(
                     source=args.url,
                     service=args.service,
-                    opts=tuple(filter(None, [
-                        str(args.language or ""), str(args.speakers or 0), str(args.whisper_model or ""),
-                        "translate" if args.translate else "", str(args.chunk_seconds or 0)
-                    ])),
+                    opts=tuple(
+                        filter(
+                            None,
+                            [
+                                str(args.language or ""),
+                                str(args.speakers or 0),
+                                str(args.whisper_model or ""),
+                                "translate" if args.translate else "",
+                                str(args.chunk_seconds or 0),
+                            ],
+                        )
+                    ),
                     local_path=str(local_path),
                 )
                 payload = _cache.get(args.cache_dir, cache_key)
@@ -432,6 +608,7 @@ def main(argv=None) -> int:
             if cache_key and not args.no_cache:
                 try:
                     from .utils import cache as _cache
+
                     payload = {
                         "text": text,
                         "segments": getattr(service, "last_segments", None),
@@ -442,7 +619,10 @@ def main(argv=None) -> int:
                     pass
     finally:
         # Clean up temp file if it was created during download
-        if bool(getattr(local_path, "is_temp", False) or getattr(local_path, "_is_temp", False)):
+        if bool(
+            getattr(local_path, "is_temp", False)
+            or getattr(local_path, "_is_temp", False)
+        ):
             try:
                 Path(local_path).unlink(missing_ok=True)
             except Exception:
@@ -461,19 +641,24 @@ def main(argv=None) -> int:
     # Post-processing
     if args.normalize:
         from .utils.textproc import normalize_text as _norm
+
         text = _norm(text)
     if args.summarize:
         from .utils.textproc import summarize_text as _sum
+
         text = _sum(text, max_sentences=int(args.summarize))
 
     if args.output:
         theme_css = None
         if args.epub_theme:
-            if isinstance(args.epub_theme, str) and args.epub_theme.startswith("custom:"):
+            if isinstance(args.epub_theme, str) and args.epub_theme.startswith(
+                "custom:"
+            ):
                 path = args.epub_theme.split(":", 1)[1]
                 theme_css = Path(path).read_text(encoding="utf-8")
             else:
                 from .exporters.themes import get_theme_css, list_themes
+
                 if args.epub_theme not in list_themes():
                     raise SystemExit(
                         f"Unknown EPUB theme '{args.epub_theme}'. Available: {', '.join(list_themes())} or use custom:/path.css"
@@ -486,7 +671,13 @@ def main(argv=None) -> int:
             "source_url": args.url,
             "local_path": str(local_path),
         }
-        for attr in ("id3_title", "id3_artist", "source_title", "source_uploader", "cover_url"):
+        for attr in (
+            "id3_title",
+            "id3_artist",
+            "source_title",
+            "source_uploader",
+            "cover_url",
+        ):
             val = getattr(local_path, attr, None)
             if val:
                 meta[attr] = val
@@ -496,7 +687,9 @@ def main(argv=None) -> int:
         if args.description:
             meta["description"] = args.description
         if args.keywords:
-            meta["keywords"] = [s.strip() for s in args.keywords.split(',') if s.strip()]
+            meta["keywords"] = [
+                s.strip() for s in args.keywords.split(",") if s.strip()
+            ]
         if args.subtitle:
             meta["subtitle"] = args.subtitle
         if args.series_title:
@@ -519,6 +712,7 @@ def main(argv=None) -> int:
                 if cover_url:
                     try:
                         import requests as _rq
+
                         r = _rq.get(cover_url, timeout=20)
                         r.raise_for_status()
                         cover_bytes = r.content

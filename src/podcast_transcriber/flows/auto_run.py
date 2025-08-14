@@ -25,13 +25,19 @@ def _run_once(config_path: str) -> None:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="podcast-auto-run", description="Schedule ingest→process→send runs")
+    ap = argparse.ArgumentParser(
+        prog="podcast-auto-run", description="Schedule ingest→process→send runs"
+    )
     ap.add_argument("--config", required=True, help="Path to YAML config")
-    ap.add_argument("--interval", default="daily", choices=["hourly", "daily"], help="Run frequency")
+    ap.add_argument(
+        "--interval", default="daily", choices=["hourly", "daily"], help="Run frequency"
+    )
     ap.add_argument("--once", action="store_true", help="Run only once and exit")
     args = ap.parse_args(argv)
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
 
     if args.once:
         _run_once(args.config)
@@ -40,11 +46,15 @@ def main(argv=None) -> int:
     try:
         from apscheduler.schedulers.blocking import BlockingScheduler  # type: ignore
     except Exception as e:
-        raise SystemExit("Scheduler requires APScheduler. Install with: pip install apscheduler or podcast-transcriber[scheduler]") from e
+        raise SystemExit(
+            "Scheduler requires APScheduler. Install with: pip install apscheduler or podcast-transcriber[scheduler]"
+        ) from e
 
     sched = BlockingScheduler()
     if args.interval == "hourly":
-        sched.add_job(lambda: _run_once(args.config), "interval", hours=1, id="podcast-job")
+        sched.add_job(
+            lambda: _run_once(args.config), "interval", hours=1, id="podcast-job"
+        )
     else:
         sched.add_job(lambda: _run_once(args.config), "cron", hour=3, id="podcast-job")
     log.info("Scheduler started (%s)", args.interval)

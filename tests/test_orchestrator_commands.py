@@ -20,7 +20,11 @@ def test_cmd_digest_writes_epub(monkeypatch, tmp_path):
 
     # Write a small EPUB placeholder
     monkeypatch.setattr(
-        orch, "export_book", lambda chapters, out_path, fmt, title=None, author=None: __import__("pathlib").Path(out_path).write_bytes(b"EPUB")
+        orch,
+        "export_book",
+        lambda chapters, out_path, fmt, title=None, author=None: __import__("pathlib")
+        .Path(out_path)
+        .write_bytes(b"EPUB"),
     )
 
     rc = orch.cmd_digest(type("A", (), {"feed": None, "weekly": True})())
@@ -28,7 +32,10 @@ def test_cmd_digest_writes_epub(monkeypatch, tmp_path):
     # Ensure file got written to ./out
     out_dir = tmp_path / "out"
     assert out_dir.exists()
-    assert any(p.suffix == ".epub" and p.read_bytes().startswith(b"EPUB") for p in out_dir.iterdir())
+    assert any(
+        p.suffix == ".epub" and p.read_bytes().startswith(b"EPUB")
+        for p in out_dir.iterdir()
+    )
 
 
 def test_cmd_run_invokes_process_and_send(monkeypatch, tmp_path):
@@ -43,9 +50,12 @@ def test_cmd_run_invokes_process_and_send(monkeypatch, tmp_path):
         lambda self, cfg: {"id": "job-xyz", "episodes": [], "config": cfg},
     )
     called = {"proc": False, "send": False}
-    monkeypatch.setattr(orch, "cmd_process", lambda args: called.__setitem__("proc", True) or 0)
-    monkeypatch.setattr(orch, "cmd_send", lambda args: called.__setitem__("send", True) or 0)
+    monkeypatch.setattr(
+        orch, "cmd_process", lambda args: called.__setitem__("proc", True) or 0
+    )
+    monkeypatch.setattr(
+        orch, "cmd_send", lambda args: called.__setitem__("send", True) or 0
+    )
 
     rc = orch.cmd_run(type("A", (), {"config": str(tmp_path / "cfg.yml")})())
     assert rc == 0 and called["proc"] and called["send"]
-

@@ -5,7 +5,20 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-SUPPORTED_FORMATS = {"txt", "pdf", "epub", "mobi", "azw", "azw3", "kfx", "srt", "vtt", "json", "md", "docx"}
+SUPPORTED_FORMATS = {
+    "txt",
+    "pdf",
+    "epub",
+    "mobi",
+    "azw",
+    "azw3",
+    "kfx",
+    "srt",
+    "vtt",
+    "json",
+    "md",
+    "docx",
+}
 
 
 def infer_format_from_path(path: Optional[str]) -> Optional[str]:
@@ -97,7 +110,15 @@ def export_transcript(
         return
 
     if fmt == "json":
-        _export_json(text, out_path, segments=segments, words=words, title=title, author=author, metadata=metadata)
+        _export_json(
+            text,
+            out_path,
+            segments=segments,
+            words=words,
+            title=title,
+            author=author,
+            metadata=metadata,
+        )
         return
 
     if fmt == "md":
@@ -155,16 +176,21 @@ def _export_pdf(
 
     orient_flag = "P" if str(orientation).lower().startswith("p") else "L"
     try:
+
         class PDFDoc(FPDF):
             def header(self_inner):
                 if header_text:
                     self_inner.set_font("Arial", size=9)
                     self_inner.cell(0, 8, header_text, 0, 1, "C")
+
             def footer(self_inner):
                 if footer_text:
                     self_inner.set_y(-12)
                     self_inner.set_font("Arial", size=9)
-                    self_inner.cell(0, 10, f"{footer_text}  |  {self_inner.page_no()}", 0, 0, "C")
+                    self_inner.cell(
+                        0, 10, f"{footer_text}  |  {self_inner.page_no()}", 0, 0, "C"
+                    )
+
         pdf = PDFDoc(orientation=orient_flag, format=page_size)
     except Exception:
         pdf = FPDF()
@@ -238,7 +264,7 @@ def _export_pdf(
         for seg in toc_segments:
             start = _format_timestamp(seg.get("start", 0.0))
             spk = seg.get("speaker")
-            label = f"[{start}] {spk+': ' if spk else ''}{(seg.get('text','')[:60]).strip()}"
+            label = f"[{start}] {spk + ': ' if spk else ''}{(seg.get('text', '')[:60]).strip()}"
             pdf.multi_cell(0, 6, label)
 
     # Basic wrapping: split on double newlines as paragraphs
@@ -308,7 +334,9 @@ def _export_epub(
         if p.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
             raise ValueError("Cover image must be a .jpg, .jpeg or .png file")
         try:
-            data = _prepare_cover_bytes(p)  # if Pillow available, resizes and re-encodes
+            data = _prepare_cover_bytes(
+                p
+            )  # if Pillow available, resizes and re-encodes
         except Exception:
             data = p.read_bytes()
         book.set_cover(p.name, data)
@@ -331,7 +359,11 @@ def _export_epub(
     )
     html_parts = [head, "<body>", "<h1>" + (title or "Transcript") + "</h1>"]
     for para in text.split("\n\n"):
-        html_parts.append("<p>" + "<br/>".join(epub.escape_html(p) for p in para.splitlines()) + "</p>")
+        html_parts.append(
+            "<p>"
+            + "<br/>".join(epub.escape_html(p) for p in para.splitlines())
+            + "</p>"
+        )
     html_parts.append("</body>")
     content = "\n".join(html_parts)
     chapters = []
@@ -344,11 +376,17 @@ def _export_epub(
             start = _format_timestamp(seg.get("start", 0.0))
             spk = seg.get("speaker")
             text_seg = seg.get("text", "")
-            cur_html.append(f"<h2 id='seg-{cur_idx}'>[{start}] {epub.escape_html(spk+': ' if spk else '')}</h2>")
+            cur_html.append(
+                f"<h2 id='seg-{cur_idx}'>[{start}] {epub.escape_html(spk + ': ' if spk else '')}</h2>"
+            )
             cur_html.append("<p>" + epub.escape_html(text_seg) + "</p>")
             cur_len += len(text_seg)
             if cur_len > 4000:  # rough size threshold
-                ch = epub.EpubHtml(title=f"Section {cur_idx}", file_name=f"section_{cur_idx}.xhtml", lang="en")
+                ch = epub.EpubHtml(
+                    title=f"Section {cur_idx}",
+                    file_name=f"section_{cur_idx}.xhtml",
+                    lang="en",
+                )
                 ch.content = "\n".join(cur_html + ["</body>"])
                 book.add_item(ch)
                 chapters.append(ch)
@@ -356,7 +394,11 @@ def _export_epub(
                 cur_len = 0
                 cur_idx += 1
         if cur_html and len(cur_html) > 2:
-            ch = epub.EpubHtml(title=f"Section {cur_idx}", file_name=f"section_{cur_idx}.xhtml", lang="en")
+            ch = epub.EpubHtml(
+                title=f"Section {cur_idx}",
+                file_name=f"section_{cur_idx}.xhtml",
+                lang="en",
+            )
             ch.content = "\n".join(cur_html + ["</body>"])
             book.add_item(ch)
             chapters.append(ch)
@@ -452,7 +494,9 @@ def export_book(
         try:
             from ebooklib import epub  # type: ignore
         except Exception as e:
-            raise RuntimeError("EPUB export requires 'ebooklib'. Install with: pip install ebooklib") from e
+            raise RuntimeError(
+                "EPUB export requires 'ebooklib'. Install with: pip install ebooklib"
+            ) from e
         book = epub.EpubBook()
         book.set_title(title or "Podcast Book")
         if author:
@@ -495,15 +539,31 @@ def export_book(
             combined_css = (combined_css or "") + css_from_file
         head = (
             "<head><meta charset='utf-8'/>"
-            + (f"<style>{epub.escape_html(combined_css)}</style>" if combined_css else "")
+            + (
+                f"<style>{epub.escape_html(combined_css)}</style>"
+                if combined_css
+                else ""
+            )
             + "</head>"
         )
         epub_chapters = []
         for idx, ch in enumerate(chapters, start=1):
-            node = epub.EpubHtml(title=str(ch.get("title") or f"Chapter {idx}"), file_name=f"chapter_{idx}.xhtml", lang="en")
-            parts = [head, "<body>", f"<h1>{epub.escape_html(str(ch.get('title') or f'Chapter {idx}'))}</h1>"]
+            node = epub.EpubHtml(
+                title=str(ch.get("title") or f"Chapter {idx}"),
+                file_name=f"chapter_{idx}.xhtml",
+                lang="en",
+            )
+            parts = [
+                head,
+                "<body>",
+                f"<h1>{epub.escape_html(str(ch.get('title') or f'Chapter {idx}'))}</h1>",
+            ]
             for para in str(ch.get("text", "")).split("\n\n"):
-                parts.append("<p>" + "<br/>".join(epub.escape_html(p) for p in para.splitlines()) + "</p>")
+                parts.append(
+                    "<p>"
+                    + "<br/>".join(epub.escape_html(p) for p in para.splitlines())
+                    + "</p>"
+                )
             parts.append("</body>")
             node.content = "\n".join(parts)
             book.add_item(node)
@@ -529,6 +589,7 @@ def export_book(
             p = d.add_paragraph(author)
         if cover_image or cover_image_bytes:
             from docx.shared import Inches  # type: ignore
+
             tmp_path = None
             try:
                 if cover_image:
@@ -577,7 +638,7 @@ def export_book(
             if fmt == "md":
                 lines += [f"\n\n## {ch_title}", ""]
             else:
-                lines += ["\n\n" + ch_title, "" ]
+                lines += ["\n\n" + ch_title, ""]
             lines.append(str(ch.get("text", "")).strip())
         Path(out_path).write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
         return
@@ -586,7 +647,9 @@ def export_book(
         try:
             from fpdf import FPDF  # type: ignore
         except Exception as e:
-            raise RuntimeError("PDF export requires 'fpdf2'. Install with: pip install fpdf2") from e
+            raise RuntimeError(
+                "PDF export requires 'fpdf2'. Install with: pip install fpdf2"
+            ) from e
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
@@ -654,10 +717,12 @@ def _prepare_cover_bytes(path: Path) -> bytes:
     Image = None
     try:
         import importlib
+
         Image = importlib.import_module("PIL.Image")  # type: ignore
     except Exception:
         try:
             from PIL import Image as PILImage  # type: ignore
+
             Image = PILImage
         except Exception:
             return path.read_bytes()
@@ -697,19 +762,23 @@ def _coalesce_segments(text: str, segments: Optional[list[dict]]) -> list[dict]:
         out = []
         for seg in segments:
             if "start" in seg and "end" in seg and "text" in seg:
-                out.append({
-                    "start": float(seg["start"]),
-                    "end": float(seg["end"]),
-                    "text": str(seg["text"]).strip(),
-                    "speaker": seg.get("speaker"),
-                })
+                out.append(
+                    {
+                        "start": float(seg["start"]),
+                        "end": float(seg["end"]),
+                        "text": str(seg["text"]).strip(),
+                        "speaker": seg.get("speaker"),
+                    }
+                )
         if out:
             return out
     # Fallback: single segment covering unknown duration
     return [{"start": 0.0, "end": 0.0, "text": text.strip()}]
 
 
-def _export_srt(text: str, out_path: str, segments: Optional[list[dict]] = None) -> None:
+def _export_srt(
+    text: str, out_path: str, segments: Optional[list[dict]] = None
+) -> None:
     segs = _coalesce_segments(text, segments)
     lines = []
     for i, seg in enumerate(segs, start=1):
@@ -726,7 +795,9 @@ def _export_srt(text: str, out_path: str, segments: Optional[list[dict]] = None)
     Path(out_path).write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
 
 
-def _export_vtt(text: str, out_path: str, segments: Optional[list[dict]] = None) -> None:
+def _export_vtt(
+    text: str, out_path: str, segments: Optional[list[dict]] = None
+) -> None:
     segs = _coalesce_segments(text, segments)
     lines = ["WEBVTT", ""]
     for seg in segs:
@@ -752,6 +823,7 @@ def _export_json(
     metadata: Optional[dict] = None,
 ) -> None:
     import json
+
     payload = {
         "title": title or "Transcript",
         "author": author,
@@ -762,10 +834,14 @@ def _export_json(
         payload["words"] = words
     if metadata:
         payload["source"] = metadata
-    Path(out_path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    Path(out_path).write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
 
-def _export_md(text: str, out_path: str, title: Optional[str], author: Optional[str]) -> None:
+def _export_md(
+    text: str, out_path: str, title: Optional[str], author: Optional[str]
+) -> None:
     lines = []
     if title:
         lines.append(f"# {title}")

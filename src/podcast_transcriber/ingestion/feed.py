@@ -11,7 +11,9 @@ def _load_feed(url: str):
     try:
         import feedparser  # type: ignore
     except Exception as e:
-        raise RuntimeError("Feed ingestion requires 'feedparser'. Install with: pip install feedparser or pip install podcast-transcriber[ingest]") from e
+        raise RuntimeError(
+            "Feed ingestion requires 'feedparser'. Install with: pip install feedparser or pip install podcast-transcriber[ingest]"
+        ) from e
     return feedparser.parse(url)
 
 
@@ -21,6 +23,7 @@ def _try_podcastindex(url: str):
     Requires PODCASTINDEX_API_KEY and PODCASTINDEX_API_SECRET environment variables.
     """
     import os
+
     key = os.environ.get("PODCASTINDEX_API_KEY")
     secret = os.environ.get("PODCASTINDEX_API_SECRET")
     if not key or not secret:
@@ -58,6 +61,7 @@ def _podcastindex_request(endpoint: str, params: dict):
     Returns parsed JSON or None on failure.
     """
     import os
+
     key = os.environ.get("PODCASTINDEX_API_KEY")
     secret = os.environ.get("PODCASTINDEX_API_SECRET")
     if not key or not secret:
@@ -93,7 +97,9 @@ def _podcastindex_by_id(feedid: Optional[str] = None, guid: Optional[str] = None
     if feedid:
         return _podcastindex_request("episodes/byfeedid", {"id": feedid, "max": 20})
     if guid:
-        return _podcastindex_request("episodes/bypodcastguid", {"guid": guid, "max": 20})
+        return _podcastindex_request(
+            "episodes/bypodcastguid", {"guid": guid, "max": 20}
+        )
     return None
 
 
@@ -105,7 +111,13 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
     feeds = config.get("feeds") or []
     episodes: list[dict[str, Any]] = []
     for f in feeds:
-        name = f.get("name") or f.get("url") or f.get("podcastindex_feedid") or f.get("podcast_guid") or "feed"
+        name = (
+            f.get("name")
+            or f.get("url")
+            or f.get("podcastindex_feedid")
+            or f.get("podcast_guid")
+            or "feed"
+        )
         url = f.get("url")
         pi = None
         # Try PodcastIndex by feed ID or GUID first
@@ -119,12 +131,15 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
         entries = []
         if pi and isinstance(pi, dict) and pi.get("items"):
             for it in pi.get("items", []):
-                entries.append({
-                    "id": it.get("id") or it.get("guid"),
-                    "title": it.get("title"),
-                    "link": it.get("link"),
-                    "enclosureUrl": it.get("enclosureUrl") or it.get("enclosure_url"),
-                })
+                entries.append(
+                    {
+                        "id": it.get("id") or it.get("guid"),
+                        "title": it.get("title"),
+                        "link": it.get("link"),
+                        "enclosureUrl": it.get("enclosureUrl")
+                        or it.get("enclosure_url"),
+                    }
+                )
         else:
             if not url:
                 continue
@@ -132,13 +147,21 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
             for entry in parsed.entries or []:
                 entries.append(entry)
         for entry in entries:
-            guid = getattr(entry, "id", None) or getattr(entry, "guid", None) or getattr(entry, "link", None)
+            guid = (
+                getattr(entry, "id", None)
+                or getattr(entry, "guid", None)
+                or getattr(entry, "link", None)
+            )
             link = getattr(entry, "link", None)
             if not link and isinstance(entry, dict):
                 link = entry.get("link")
             if store.has_seen(name, guid or link):
                 continue
-            title = (getattr(entry, "title", None) if not isinstance(entry, dict) else entry.get("title")) or "Episode"
+            title = (
+                getattr(entry, "title", None)
+                if not isinstance(entry, dict)
+                else entry.get("title")
+            ) or "Episode"
             media_url = None
             # try common enclosure
             try:
@@ -158,7 +181,9 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
             ep = {
                 "feed": name,
                 "title": title,
-                "slug": (title.lower().replace(" ", "-")[:40] if title else f"{name}-ep"),
+                "slug": (
+                    title.lower().replace(" ", "-")[:40] if title else f"{name}-ep"
+                ),
                 "source": media_url,
                 "guid": guid or link,
                 "created_at": datetime.utcnow().isoformat() + "Z",

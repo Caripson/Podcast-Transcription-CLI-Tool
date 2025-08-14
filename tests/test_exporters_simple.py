@@ -22,7 +22,16 @@ def test_export_json_with_words_and_meta(tmp_path):
         {"start": 0.0, "end": 0.3, "word": "Hi"},
     ]
     meta = {"source_url": "u", "local_path": "/p"}
-    export_transcript("Hi", str(out), "json", segments=segs, words=words, title="T", author="A", metadata=meta)
+    export_transcript(
+        "Hi",
+        str(out),
+        "json",
+        segments=segs,
+        words=words,
+        title="T",
+        author="A",
+        metadata=meta,
+    )
     obj = json.loads(out.read_text(encoding="utf-8"))
     assert obj["title"] == "T" and obj["author"] == "A"
     assert isinstance(obj.get("segments"), list) and obj.get("words")[0]["word"] == "Hi"

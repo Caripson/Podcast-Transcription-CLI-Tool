@@ -1,7 +1,5 @@
 from __future__ import annotations
 
- 
-
 
 def segment_by_simple_rules(text: str, max_chars: int = 4000) -> list[dict[str, str]]:
     """Very simple fallback segmenter that creates topic-like chunks.
@@ -17,14 +15,16 @@ def segment_by_simple_rules(text: str, max_chars: int = 4000) -> list[dict[str, 
         buf.append(p)
         size += len(p)
         if size >= max_chars:
-            out.append({"title": f"Ämne {len(out)+1}", "text": "\n\n".join(buf)})
+            out.append({"title": f"Ämne {len(out) + 1}", "text": "\n\n".join(buf)})
             buf, size = [], 0
     if buf:
-        out.append({"title": f"Topic {len(out)+1}", "text": "\n\n".join(buf)})
+        out.append({"title": f"Topic {len(out) + 1}", "text": "\n\n".join(buf)})
     return out
 
 
-def segment_with_embeddings(text: str, threshold: float = 0.75, max_chunk_chars: int = 6000) -> list[dict[str, str]]:
+def segment_with_embeddings(
+    text: str, threshold: float = 0.75, max_chunk_chars: int = 6000
+) -> list[dict[str, str]]:
     """Optional semantic segmentation using sentence embeddings.
 
     Requires 'sentence-transformers'. Falls back to simple rules if unavailable.
@@ -35,6 +35,7 @@ def segment_with_embeddings(text: str, threshold: float = 0.75, max_chunk_chars:
     except Exception:
         return segment_by_simple_rules(text, max_chars=max_chunk_chars)
     import re
+
     sents = re.split(r"(?<=[.!?])\s+", text.strip())
     sents = [s for s in sents if s]
     if not sents:
@@ -46,11 +47,11 @@ def segment_with_embeddings(text: str, threshold: float = 0.75, max_chunk_chars:
     for i in range(1, len(sents)):
         sim = float(util.cos_sim(embs[i - 1], embs[i]).item())
         if sim < threshold or sum(len(x) for x in buf) > max_chunk_chars:
-            chunks.append({"title": f"Topic {len(chunks)+1}", "text": " ".join(buf)})
+            chunks.append({"title": f"Topic {len(chunks) + 1}", "text": " ".join(buf)})
             buf = []
         buf.append(sents[i])
     if buf:
-        chunks.append({"title": f"Topic {len(chunks)+1}", "text": " ".join(buf)})
+        chunks.append({"title": f"Topic {len(chunks) + 1}", "text": " ".join(buf)})
     return chunks
 
 
@@ -60,6 +61,7 @@ def key_takeaways(text: str, max_points: int = 5) -> list[str]:
     Placeholder for a more robust summarizer. Keeps logic lightweight.
     """
     import re
+
     words = re.findall(r"[A-Za-zÅÄÖåäö0-9']+", text)
     freq = {}
     for w in words:
@@ -81,6 +83,7 @@ def key_takeaways_better(text: str, max_points: int = 5) -> list[str]:
     # Try spaCy first
     try:
         import spacy  # type: ignore
+
         try:
             nlp = spacy.load("en_core_web_sm")
         except Exception:
@@ -89,12 +92,22 @@ def key_takeaways_better(text: str, max_points: int = 5) -> list[str]:
                 nlp = spacy.blank("en")  # minimal tokenizer; no POS tags
             except Exception:
                 nlp = None
-        if nlp is not None and hasattr(nlp, "pipe") and getattr(nlp, "has_pipe", lambda *a, **k: False)("tagger"):
+        if (
+            nlp is not None
+            and hasattr(nlp, "pipe")
+            and getattr(nlp, "has_pipe", lambda *a, **k: False)("tagger")
+        ):
             doc = nlp(text)
-            phrases = [chunk.text.strip() for chunk in getattr(doc, "noun_chunks", []) if chunk.text.strip()]
+            phrases = [
+                chunk.text.strip()
+                for chunk in getattr(doc, "noun_chunks", [])
+                if chunk.text.strip()
+            ]
             # fallback if no noun_chunks
             if not phrases:
-                phrases = [t.lemma_ for t in doc if t.is_alpha and t.pos_ in {"NOUN", "PROPN"}]
+                phrases = [
+                    t.lemma_ for t in doc if t.is_alpha and t.pos_ in {"NOUN", "PROPN"}
+                ]
             freq: dict[str, int] = {}
             for p in phrases:
                 key = p.lower()
@@ -106,6 +119,7 @@ def key_takeaways_better(text: str, max_points: int = 5) -> list[str]:
 
     # Regex-based simple noun-ish phrase extraction
     import re
+
     # Capture Capitalized phrases and mid-length lowercase multi-words as candidates
     caps = re.findall(r"(?:[A-Z][a-z]+(?: [A-Z][a-z]+){0,3})", text)
     words = re.findall(r"[A-Za-zÅÄÖåäö0-9']+", text)

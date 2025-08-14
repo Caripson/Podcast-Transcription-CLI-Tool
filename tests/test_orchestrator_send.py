@@ -1,11 +1,13 @@
 from pathlib import Path
 
+
 def test_cmd_send_emails_artifacts(monkeypatch, tmp_path):
     # Isolate state and output
     monkeypatch.setenv("PODCAST_STATE_DIR", str(tmp_path / ".state"))
 
     # Prepare a job with a fake artifact
     from podcast_transcriber.storage.state import StateStore
+
     store = StateStore()
     out_dir = tmp_path / "out"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -43,6 +45,7 @@ def test_cmd_send_emails_artifacts(monkeypatch, tmp_path):
     )
 
     from podcast_transcriber.orchestrator import cmd_send
+
     rc = cmd_send(type("A", (), {"job_id": job["id"]})())
     assert rc == 0
     assert calls and Path(calls[0]["attachment_path"]).name == "episode.epub"

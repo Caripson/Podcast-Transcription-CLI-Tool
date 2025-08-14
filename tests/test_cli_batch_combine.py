@@ -33,7 +33,9 @@ def test_cli_batch_combine_into_epub(tmp_path, monkeypatch):
         def transcribe(self, audio_path: str, language=None) -> str:
             return texts[audio_path]
 
-    monkeypatch.setattr("podcast_transcriber.services.get_service", lambda name: Svc(""))
+    monkeypatch.setattr(
+        "podcast_transcriber.services.get_service", lambda name: Svc("")
+    )
 
     # Patch export_book to just write a file and capture payload
     calls = {}
@@ -46,13 +48,20 @@ def test_cli_batch_combine_into_epub(tmp_path, monkeypatch):
     monkeypatch.setattr("podcast_transcriber.exporters.export_book", fake_export_book)
 
     out_path = tmp_path / "book.epub"
-    code = cli.main([
-        "--service", "whisper",
-        "--url", str(a1),
-        "--input-file", str(lst),
-        "--combine-into", str(out_path),
-        "--format", "epub",
-    ])
+    code = cli.main(
+        [
+            "--service",
+            "whisper",
+            "--url",
+            str(a1),
+            "--input-file",
+            str(lst),
+            "--combine-into",
+            str(out_path),
+            "--format",
+            "epub",
+        ]
+    )
     assert code == 0
     assert out_path.exists()
     assert calls.get("fmt") == "epub"

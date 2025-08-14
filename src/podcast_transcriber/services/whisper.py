@@ -5,7 +5,12 @@ from .base import TranscriptionService
 
 
 class WhisperService(TranscriptionService):
-    def __init__(self, model: str = "base", translate: bool = False, chunk_seconds: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        model: str = "base",
+        translate: bool = False,
+        chunk_seconds: Optional[int] = None,
+    ) -> None:
         self.model_name = model
         self.translate = translate
         self.chunk_seconds = chunk_seconds
@@ -38,36 +43,58 @@ class WhisperService(TranscriptionService):
             import subprocess
             import tempfile
             from pathlib import Path
+
             tempdir = tempfile.mkdtemp(prefix="wchunks_")
             pat = os.path.join(tempdir, "chunk_%05d.wav")
             # segment into fixed-length chunks
-            subprocess.run([
-                "ffmpeg","-y","-i", audio_path,
-                "-f","segment","-segment_time", str(int(self.chunk_seconds)),
-                "-c","copy", pat
-            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    audio_path,
+                    "-f",
+                    "segment",
+                    "-segment_time",
+                    str(int(self.chunk_seconds)),
+                    "-c",
+                    "copy",
+                    pat,
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             text_parts = []
             base_offset = 0.0
             all_segments: List[Dict] = []
             all_words: List[Dict] = []
             for chunk in sorted(Path(tempdir).glob("chunk_*.wav")):
-                result = model.transcribe(str(chunk), language=language, task=("translate" if self.translate else None))
+                result = model.transcribe(
+                    str(chunk),
+                    language=language,
+                    task=("translate" if self.translate else None),
+                )
                 t = (result.get("text") or "").strip()
                 if t:
                     text_parts.append(t)
                 for seg in result.get("segments", []) or []:
-                    all_segments.append({
-                        "start": float(seg.get("start", 0.0)) + base_offset,
-                        "end": float(seg.get("end", 0.0)) + base_offset,
-                        "text": str(seg.get("text", "")).strip(),
-                    })
+                    all_segments.append(
+                        {
+                            "start": float(seg.get("start", 0.0)) + base_offset,
+                            "end": float(seg.get("end", 0.0)) + base_offset,
+                            "text": str(seg.get("text", "")).strip(),
+                        }
+                    )
                     # word-level if present
                     for w in seg.get("words", []) or []:
-                        all_words.append({
-                            "start": float(w.get("start", 0.0)) + base_offset,
-                            "end": float(w.get("end", 0.0)) + base_offset,
-                            "word": str(w.get("word", "")),
-                        })
+                        all_words.append(
+                            {
+                                "start": float(w.get("start", 0.0)) + base_offset,
+                                "end": float(w.get("end", 0.0)) + base_offset,
+                                "word": str(w.get("word", "")),
+                            }
+                        )
                 base_offset += float(self.chunk_seconds)
             # cleanup chunks
             try:
@@ -83,23 +110,31 @@ class WhisperService(TranscriptionService):
             self.last_words = all_words
             return "\n\n".join(text_parts).strip()
         else:
-            result = model.transcribe(audio_path, language=language, task=("translate" if self.translate else None))
+            result = model.transcribe(
+                audio_path,
+                language=language,
+                task=("translate" if self.translate else None),
+            )
             text = (result.get("text") or "").strip()
             # capture segments and words if present
             segs = []
             words = []
             for seg in result.get("segments", []) or []:
-                segs.append({
-                    "start": float(seg.get("start", 0.0)),
-                    "end": float(seg.get("end", 0.0)),
-                    "text": str(seg.get("text", "")).strip(),
-                })
+                segs.append(
+                    {
+                        "start": float(seg.get("start", 0.0)),
+                        "end": float(seg.get("end", 0.0)),
+                        "text": str(seg.get("text", "")).strip(),
+                    }
+                )
                 for w in seg.get("words", []) or []:
-                    words.append({
-                        "start": float(w.get("start", 0.0)),
-                        "end": float(w.get("end", 0.0)),
-                        "word": str(w.get("word", "")),
-                    })
+                    words.append(
+                        {
+                            "start": float(w.get("start", 0.0)),
+                            "end": float(w.get("end", 0.0)),
+                            "word": str(w.get("word", "")),
+                        }
+                    )
             self.last_segments = segs
             self.last_words = words
             return text

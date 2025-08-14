@@ -30,7 +30,9 @@ def test_export_docx_with_fake_module(tmp_path, monkeypatch):
                 def add_run(self, x):
                     class R:
                         pass
+
                     return R()
+
             return P()
 
         def add_heading(self, *args, **kwargs):

@@ -101,11 +101,13 @@ class AWSTranscribeService(TranscriptionService):
                 for it in items:
                     if it.get("type") == "pronunciation":
                         alt = (it.get("alternatives") or [{}])[0]
-                        words.append({
-                            "start": float(it.get("start_time", 0.0)),
-                            "end": float(it.get("end_time", 0.0)),
-                            "word": alt.get("content", ""),
-                        })
+                        words.append(
+                            {
+                                "start": float(it.get("start_time", 0.0)),
+                                "end": float(it.get("end_time", 0.0)),
+                                "word": alt.get("content", ""),
+                            }
+                        )
                 spk_map: Dict[float, str] = {}
                 labels = (results.get("speaker_labels") or {}).get("segments", []) or []
                 for seg in labels:
@@ -124,22 +126,28 @@ class AWSTranscribeService(TranscriptionService):
                 for w in words:
                     spk = spk_map.get(w.get("start"))
                     if spk != cur_spk and cur:
-                        segments.append({
-                            "start": cur[0]["start"],
-                            "end": cur[-1]["end"],
-                            "text": " ".join(x.get("word", "") for x in cur).strip(),
-                            "speaker": cur_spk,
-                        })
+                        segments.append(
+                            {
+                                "start": cur[0]["start"],
+                                "end": cur[-1]["end"],
+                                "text": " ".join(
+                                    x.get("word", "") for x in cur
+                                ).strip(),
+                                "speaker": cur_spk,
+                            }
+                        )
                         cur = []
                     cur.append(w)
                     cur_spk = spk
                 if cur:
-                    segments.append({
-                        "start": cur[0]["start"],
-                        "end": cur[-1]["end"],
-                        "text": " ".join(x.get("word", "") for x in cur).strip(),
-                        "speaker": cur_spk,
-                    })
+                    segments.append(
+                        {
+                            "start": cur[0]["start"],
+                            "end": cur[-1]["end"],
+                            "text": " ".join(x.get("word", "") for x in cur).strip(),
+                            "speaker": cur_spk,
+                        }
+                    )
                 self.last_words = words
                 self.last_segments = segments
                 # Attempt to delete input object unless keeping

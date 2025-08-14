@@ -18,6 +18,8 @@ def test_state_store_basic_ops(monkeypatch, tmp_path):
     assert got and got["id"] == job["id"]
 
     # list_recent should include recent jobs and filter older
-    store.state["jobs"][0]["created_at"] = (datetime.utcnow() - timedelta(days=1)).isoformat() + "Z"
+    store.state["jobs"][0]["created_at"] = (
+        datetime.utcnow() - timedelta(days=1)
+    ).isoformat() + "Z"
     recent = store.list_recent(days=7, feed_name=None)
     assert isinstance(recent, list)

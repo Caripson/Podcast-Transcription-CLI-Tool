@@ -8,13 +8,18 @@ def test_youtube_download_sets_metadata_and_writes_file(monkeypatch, tmp_path):
     url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
     # Pretend yt-dlp is available
-    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/yt-dlp" if name == "yt-dlp" else None)
+    monkeypatch.setattr(
+        "shutil.which", lambda name: "/usr/bin/yt-dlp" if name == "yt-dlp" else None
+    )
 
     # Return video metadata
-    meta = {"title": "Cool Video", "thumbnail": "https://img/cover.jpg", "uploader": "ChannelX"}
+    meta = {
+        "title": "Cool Video",
+        "thumbnail": "https://img/cover.jpg",
+        "uploader": "ChannelX",
+    }
     monkeypatch.setattr(
-        "subprocess.check_output",
-        lambda args: json.dumps(meta).encode("utf-8")
+        "subprocess.check_output", lambda args: json.dumps(meta).encode("utf-8")
     )
 
     # When yt-dlp runs, write a tiny file to the requested output path (arg after -o)

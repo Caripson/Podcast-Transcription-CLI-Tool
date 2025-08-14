@@ -25,8 +25,10 @@ THEMES = {
     ),
 }
 
+
 def get_theme_css(name: str) -> str:
     return THEMES.get(name, "")
+
 
 def list_themes():
     return sorted(THEMES.keys())

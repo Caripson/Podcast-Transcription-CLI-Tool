@@ -54,7 +54,9 @@ def test_http_retry_logic(monkeypatch):
     class FakeResp:
         headers = {"content-type": "audio/mpeg"}
 
-        def iter_content(self, chunk_size=8192):  # pragma: no cover - unused in this test
+        def iter_content(
+            self, chunk_size=8192
+        ):  # pragma: no cover - unused in this test
             yield b"X"
 
         def raise_for_status(self):

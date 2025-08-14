@@ -14,10 +14,15 @@ def test_cli_batch_requires_output_dir_when_not_combining(tmp_path, monkeypatch)
         lambda s: str(tmp_path / "placeholder.wav"),
     )
     with pytest.raises(SystemExit) as exc:
-        cli.main([
-            "--service", "whisper",
-            "--url", str(tmp_path / "placeholder.wav"),
-            "--input-file", str(lst),
-            # no --output dir and no --combine-into
-        ])
+        cli.main(
+            [
+                "--service",
+                "whisper",
+                "--url",
+                str(tmp_path / "placeholder.wav"),
+                "--input-file",
+                str(lst),
+                # no --output dir and no --combine-into
+            ]
+        )
     assert "--output directory is required for --input-file" in str(exc.value)

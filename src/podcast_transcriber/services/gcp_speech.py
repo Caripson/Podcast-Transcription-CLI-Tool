@@ -11,7 +11,12 @@ class GCPSpeechService(TranscriptionService):
     - GCP credentials configured (e.g., GOOGLE_APPLICATION_CREDENTIALS)
     """
 
-    def __init__(self, alternative_language_codes: Optional[list[str]] = None, speakers: Optional[int] = None, long_running: bool = False) -> None:
+    def __init__(
+        self,
+        alternative_language_codes: Optional[list[str]] = None,
+        speakers: Optional[int] = None,
+        long_running: bool = False,
+    ) -> None:
         self._alt_langs = alternative_language_codes or []
         self._speakers = speakers
         self._long_running = long_running
@@ -59,14 +64,20 @@ class GCPSpeechService(TranscriptionService):
                 a0 = alt[0]
                 parts.append(getattr(a0, "transcript", ""))
                 for w in getattr(a0, "words", []) or []:
-                    st = getattr(getattr(w, "start_time", None), "total_seconds", lambda: 0.0)()
-                    et = getattr(getattr(w, "end_time", None), "total_seconds", lambda: 0.0)()
-                    words.append({
-                        "start": float(st),
-                        "end": float(et),
-                        "word": getattr(w, "word", ""),
-                        "speaker": getattr(w, "speaker_tag", None),
-                    })
+                    st = getattr(
+                        getattr(w, "start_time", None), "total_seconds", lambda: 0.0
+                    )()
+                    et = getattr(
+                        getattr(w, "end_time", None), "total_seconds", lambda: 0.0
+                    )()
+                    words.append(
+                        {
+                            "start": float(st),
+                            "end": float(et),
+                            "word": getattr(w, "word", ""),
+                            "speaker": getattr(w, "speaker_tag", None),
+                        }
+                    )
         # Build speaker segments if any speaker info present
         segments: List[Dict] = []
         cur: List[Dict] = []
@@ -74,22 +85,26 @@ class GCPSpeechService(TranscriptionService):
         for w in words:
             spk = w.get("speaker")
             if spk != cur_spk and cur:
-                segments.append({
-                    "start": cur[0]["start"],
-                    "end": cur[-1]["end"],
-                    "text": " ".join(x.get("word", "") for x in cur).strip(),
-                    "speaker": cur_spk,
-                })
+                segments.append(
+                    {
+                        "start": cur[0]["start"],
+                        "end": cur[-1]["end"],
+                        "text": " ".join(x.get("word", "") for x in cur).strip(),
+                        "speaker": cur_spk,
+                    }
+                )
                 cur = []
             cur.append(w)
             cur_spk = spk
         if cur:
-            segments.append({
-                "start": cur[0]["start"],
-                "end": cur[-1]["end"],
-                "text": " ".join(x.get("word", "") for x in cur).strip(),
-                "speaker": cur_spk,
-            })
+            segments.append(
+                {
+                    "start": cur[0]["start"],
+                    "end": cur[-1]["end"],
+                    "text": " ".join(x.get("word", "") for x in cur).strip(),
+                    "speaker": cur_spk,
+                }
+            )
         self.last_words = words
         self.last_segments = segments
         return " ".join(p.strip() for p in parts if p).strip()

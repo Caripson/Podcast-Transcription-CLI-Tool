@@ -16,4 +16,3 @@ def test_cli_requires_service(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         cli.main(["--url", str(f)])  # no --service
     assert "--service is required" in str(exc.value)
-

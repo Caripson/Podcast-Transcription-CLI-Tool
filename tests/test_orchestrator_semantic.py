@@ -17,11 +17,17 @@ def test_process_semantic_true(monkeypatch, tmp_path):
     # Use a local file and bypass network
     a = tmp_path / "a.wav"
     a.write_bytes(b"RIFF..")
-    monkeypatch.setattr("podcast_transcriber.orchestrator.ensure_local_audio", lambda s: str(a))
-    monkeypatch.setattr("podcast_transcriber.services.get_service", lambda name: DummyService("hello world"))
+    monkeypatch.setattr(
+        "podcast_transcriber.orchestrator.ensure_local_audio", lambda s: str(a)
+    )
+    monkeypatch.setattr(
+        "podcast_transcriber.services.get_service",
+        lambda name: DummyService("hello world"),
+    )
     # Force semantic segmentation to return two chapters
     monkeypatch.setattr(
-        orch, "segment_with_embeddings",
+        orch,
+        "segment_with_embeddings",
         lambda text: [{"title": "C1", "text": "A"}, {"title": "C2", "text": "B"}],
     )
     res = orch._process_episode(
@@ -41,8 +47,13 @@ def test_process_semantic_false_default_single(monkeypatch, tmp_path):
     orch = importlib.import_module("podcast_transcriber.orchestrator")
     a = tmp_path / "b.wav"
     a.write_bytes(b"RIFF..")
-    monkeypatch.setattr("podcast_transcriber.orchestrator.ensure_local_audio", lambda s: str(a))
-    monkeypatch.setattr("podcast_transcriber.services.get_service", lambda name: DummyService("text body"))
+    monkeypatch.setattr(
+        "podcast_transcriber.orchestrator.ensure_local_audio", lambda s: str(a)
+    )
+    monkeypatch.setattr(
+        "podcast_transcriber.services.get_service",
+        lambda name: DummyService("text body"),
+    )
     # Disable semantic; should fall back to a single chapter with full text
     res = orch._process_episode(
         {"source": str(a), "title": "Ep"},

@@ -10,6 +10,7 @@ def _read_pyproject_version() -> Optional[str]:
     try:
         # Prefer the version declared in the local pyproject.toml when running from source
         from pathlib import Path
+
         this_file = Path(__file__).resolve()
         for parent in this_file.parents:
             p = parent / "pyproject.toml"
@@ -29,6 +30,7 @@ def _read_pyproject_version() -> Optional[str]:
                 except Exception:
                     # Fallback to a simple regex if toml lib is unavailable
                     import re
+
                     m = re.search(r"^version\s*=\s*\"([^\"]+)\"", text, re.MULTILINE)
                     if m:
                         return m.group(1).strip()
@@ -50,6 +52,7 @@ def _resolve_version() -> str:
         except Exception:
             pass
     return "dev"
+
 
 __version__ = _resolve_version()
 __credits__ = "Developed by Johan Caripson"

@@ -23,8 +23,6 @@ def _require_requests():
         ) from e
 
 
- 
-
 _URL_RE = re.compile(r"^https?://", re.IGNORECASE)
 
 

@@ -7,4 +7,3 @@ class TranscriptionService(ABC):
     def transcribe(self, audio_path: str, language: Optional[str] = None) -> str:
         """Return transcript text for a local audio file path."""
         raise NotImplementedError
-
