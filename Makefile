@@ -7,10 +7,10 @@ help:
 	@echo "  make venv            # create .venv"
 	@echo "  make dev             # install dev deps (editable)"
 	@echo "  make test            # run pytest"
-	@echo "  make fmt             # run black on src/tests"
-	@echo "  make fmt-check       # black --check"
-	@echo "  make lint            # ruff check"
-	@echo "  make lint-fix        # ruff --fix"
+	@echo "  make fmt             # python -m black src tests"
+	@echo "  make fmt-check       # python -m black --check"
+	@echo "  make lint            # python -m ruff check"
+	@echo "  make lint-fix        # python -m ruff check --fix"
 	@echo "  make smoke           # run smoke script"
 	@echo "  make docs-serve      # serve mkdocs"
 	@echo "  make build           # build sdist+wheel"
@@ -29,16 +29,16 @@ test:
 	. .venv/bin/activate && pytest -q
 
 fmt:
-	. .venv/bin/activate && black src tests || (echo "Install black via: pip install -e .[dev]" && exit 1)
+	python -m black src tests || (echo "Black not found. Install dev deps: pip install -e .[dev]" && exit 1)
 
 fmt-check:
-	. .venv/bin/activate && black --check src tests || (echo "Install black via: pip install -e .[dev]" && exit 1)
+	python -m black --check src tests || (echo "Formatting issues or Black missing. Install dev deps: pip install -e .[dev]" && exit 1)
 
 lint:
-	. .venv/bin/activate && ruff check src tests || (echo "Install ruff via: pip install -e .[dev]" && exit 1)
+	python -m ruff check src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)
 
 lint-fix:
-	. .venv/bin/activate && ruff check --fix src tests || (echo "Install ruff via: pip install -e .[dev]" && exit 1)
+	python -m ruff check --fix src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)
 
 smoke:
 	chmod +x scripts/smoke.sh || true
