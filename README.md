@@ -126,6 +126,36 @@ Notes
 - Whisper adds significant image size; only include it if needed.
 - Kindle conversions (azw/azw3/kfx) require Calibre `ebook-convert`, which is not installed in the image.
 
+### Docker Compose
+
+Use compose.yaml to build and run the image locally.
+
+```bash
+# Build (choose extras via PIP_EXTRAS; add ",whisper" if needed)
+PIP_EXTRAS=export,templates,ingest,orchestrator,env docker compose build
+
+# Prepare config and output
+cp examples/config.example.yml ./config.yml  # or your own config
+mkdir -p out secrets
+
+# Optional: put GCP creds in ./secrets/gcp.json and export email/cloud envs
+export AWS_TRANSCRIBE_S3_BUCKET=... \
+       KINDLE_TO_EMAIL=... \
+       KINDLE_FROM_EMAIL=... \
+       SMTP_HOST=... SMTP_PORT=587 SMTP_USER=... SMTP_PASS=...
+
+# Run orchestrator pipeline
+docker compose up orchestrator
+
+# See output in ./out
+```
+
+Compose services
+
+- `transcriber`: `podcast-transcriber` CLI (default `--help`).
+- `orchestrator`: `podcast-cli` `run --config /config/config.yml` with volumes mounted for `/config`, `/out`, and `/secrets`.
+
+
 
 ### Environment (.env)
 

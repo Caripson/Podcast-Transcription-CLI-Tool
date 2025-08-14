@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  transcriber:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Include common runtime extras; add `,whisper` if needed
+        PIP_EXTRAS: ${PIP_EXTRAS:-export,templates,ingest,orchestrator,env}
+    image: podcast-transcriber:local
+    entrypoint: podcast-transcriber
+    command: ["--help"]
+    volumes:
+      - ./out:/out
+
+  orchestrator:
+    image: podcast-transcriber:local
+    depends_on:
+      - transcriber
+    entrypoint: podcast-cli
+    command: ["run", "--config", "/config/config.yml"]
+    environment:
+      # Cloud + email credentials (optional; set in your shell or a .env file)
+      - AWS_TRANSCRIBE_S3_BUCKET=${AWS_TRANSCRIBE_S3_BUCKET}
+      - AWS_REGION=${AWS_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp.json
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - KINDLE_TO_EMAIL=${KINDLE_TO_EMAIL}
+      - KINDLE_FROM_EMAIL=${KINDLE_FROM_EMAIL}
+    volumes:
+      - ./config.yml:/config/config.yml:ro
+      - ./out:/out
+      - ./secrets:/secrets:ro
+
