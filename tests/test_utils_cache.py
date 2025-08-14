@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from podcast_transcriber.utils import cache as c
 
 
