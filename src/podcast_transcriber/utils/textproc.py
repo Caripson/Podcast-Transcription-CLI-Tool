@@ -12,4 +12,3 @@ def summarize_text(text: str, max_sentences: int = 5) -> str:
     # Naive: take first N sentences.
     parts = re.split(r"(?<=[.!?])\s+", text)
     return " ".join(parts[:max_sentences]).strip()
-

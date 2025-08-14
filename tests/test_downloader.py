@@ -1,5 +1,4 @@
 from pathlib import Path
-from types import SimpleNamespace
 from unittest import mock
 
 from podcast_transcriber.utils.downloader import ensure_local_audio, is_url
@@ -42,4 +41,3 @@ def test_raises_if_local_missing(tmp_path):
         pass
     else:
         raise AssertionError("Expected FileNotFoundError")
-

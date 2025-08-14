@@ -1,5 +1,4 @@
 import io
-from pathlib import Path
 from unittest import mock
 
 import podcast_transcriber.cli as cli
@@ -54,14 +53,15 @@ def test_cli_writes_to_file(tmp_path, monkeypatch):
         lambda name: service,
     )
 
-    code = cli.main([
-        "--url",
-        str(dummy_audio),
-        "--service",
-        "whisper",
-        "--output",
-        str(out_file),
-    ])
+    code = cli.main(
+        [
+            "--url",
+            str(dummy_audio),
+            "--service",
+            "whisper",
+            "--output",
+            str(out_file),
+        ]
+    )
     assert code == 0
     assert out_file.read_text(encoding="utf-8").strip() == "Hej transcript"
-

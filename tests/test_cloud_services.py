@@ -1,4 +1,3 @@
-import json
 from unittest import mock
 
 from podcast_transcriber.services.aws_transcribe import AWSTranscribeService
@@ -25,7 +24,9 @@ def test_aws_transcribe_minimal_flow(monkeypatch, tmp_path):
             return transcribe_client
         raise AssertionError("unexpected client")
 
-    monkeypatch.setitem(__import__("sys").modules, "boto3", mock.Mock(client=fake_client))
+    monkeypatch.setitem(
+        __import__("sys").modules, "boto3", mock.Mock(client=fake_client)
+    )
 
     # Prepare get_transcription_job to return COMPLETED with TranscriptFileUri
     transcribe_client.get_transcription_job.return_value = {
@@ -102,4 +103,3 @@ def test_gcp_speech_minimal_flow(monkeypatch, tmp_path):
     svc = GCPSpeechService()
     text = svc.transcribe(str(audio), language="sv-SE")
     assert "Hej" in text
-
