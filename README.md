@@ -79,6 +79,54 @@ pip install -e .[gcp]
 pip install -e .[export]
 ```
 
+## Docker
+
+Build a minimal image (choose extras via build-arg). By default, we include useful runtime extras: `export,templates,ingest,orchestrator,env`. For Whisper (heavy), add `whisper` explicitly.
+
+```bash
+# Base features (PDF/EPUB/templates/orchestrator/ingest):
+docker build -t podcast-transcriber:latest \
+  --build-arg PIP_EXTRAS=export,templates,ingest,orchestrator,env .
+
+# Include Whisper (requires ffmpeg; already installed in the image):
+docker build -t podcast-transcriber:whisper \
+  --build-arg PIP_EXTRAS=export,templates,ingest,orchestrator,env,whisper .
+```
+
+Run the CLI (mount output directory):
+
+```bash
+mkdir -p ./out
+docker run --rm \
+  -v "$(pwd)/out:/out" \
+  podcast-transcriber:latest \
+  --url "https://example.com/audio.mp3" \
+  --service aws \
+  --format txt \
+  --output /out/transcript.txt
+```
+
+Run the Orchestrator (override entrypoint with `--entrypoint`):
+
+```bash
+# config.yml should be in your current directory
+docker run --rm \
+  --entrypoint podcast-cli \
+  -v "$(pwd)/config.yml:/config.yml:ro" \
+  -v "$(pwd)/out:/out" \
+  -e AWS_TRANSCRIBE_S3_BUCKET="$AWS_TRANSCRIBE_S3_BUCKET" \
+  -e GOOGLE_APPLICATION_CREDENTIALS="/secrets/gcp.json" \
+  podcast-transcriber:latest \
+  run --config /config.yml
+```
+
+Notes
+
+- Provide cloud credentials via environment variables (`AWS_*`, `GOOGLE_APPLICATION_CREDENTIALS`, SMTP vars) or mount secrets files.
+- Whisper adds significant image size; only include it if needed.
+- Kindle conversions (azw/azw3/kfx) require Calibre `ebook-convert`, which is not installed in the image.
+
+
 ### Environment (.env)
 
 - Copy the example file and fill in values as needed:
