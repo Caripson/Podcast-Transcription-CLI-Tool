@@ -663,17 +663,24 @@ def _prepare_cover_bytes(path: Path) -> bytes:
             return path.read_bytes()
 
     max_size = (1600, 2560)
-    with Image.open(str(path)) as img:
-        img = img.convert("RGB")
-        img.thumbnail(max_size, Image.LANCZOS)
-        import io
+    try:
+        with Image.open(str(path)) as img:
+            img = img.convert("RGB")
+            img.thumbnail(max_size, Image.LANCZOS)
+            import io
 
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=85)
-        data = buf.getvalue()
-        if not data:
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+            data = buf.getvalue()
+            if not data:
+                return path.read_bytes()
+            return data
+    except Exception:
+        # If PIL cannot identify or process the image, fall back to raw file bytes
+        try:
             return path.read_bytes()
-        return data
+        except Exception:
+            return b""
 
 
 def _format_timestamp(seconds: float) -> str:
