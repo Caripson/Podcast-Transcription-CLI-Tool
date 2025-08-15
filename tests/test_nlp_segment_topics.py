@@ -16,12 +16,17 @@ def test_segment_with_embeddings_fallback_when_library_missing():
     # Ensure sentence_transformers import fails to trigger fallback
     sys.modules.pop("sentence_transformers", None)
     text = "Sentence one. Sentence two."
-    chunks = st.segment_with_embeddings(text, threshold=0.99, max_chunk_chars=10)
+    chunks = st.segment_with_embeddings(
+        text, threshold=0.99, max_chunk_chars=10
+    )
     assert isinstance(chunks, list) and chunks
 
 
 def test_key_takeaways_simple():
-    text = "OpenAI builds useful tools for developers. Developers love useful tools."
+    text = (
+        "OpenAI builds useful tools for developers. "
+        "Developers love useful tools."
+    )
     kws = st.key_takeaways(text, max_points=3)
     assert isinstance(kws, list) and kws
     # Expect words like 'developers' or 'tools' to appear
@@ -55,4 +60,3 @@ def test_key_takeaways_better_regex_fallback(monkeypatch):
     assert isinstance(kws, list) and kws
     # Should contain lowercased phrases/words extracted via regex fallback
     assert any("openai" in k or "developer" in k for k in kws)
-
