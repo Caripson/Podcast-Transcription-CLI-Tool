@@ -1,13 +1,15 @@
 import argparse
 import os
 import sys
-from datetime import datetime
+import subprocess
+import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 from . import services
 from .delivery.send_to_kindle import send_file_via_smtp
-from .exporters import export_book
+from .exporters import export_book, export_transcript
 from .ingestion.feed import discover_new_episodes
 from .kindle.epub_builder import Chapter, Document
 from .nlp.segment_topics import key_takeaways_better, segment_with_embeddings
@@ -78,6 +80,7 @@ def _process_episode(
     quality: str,
     language: Optional[str],
     nlp_cfg: Optional[dict] = None,
+    clip_minutes: Optional[int] = None,
 ) -> dict:
     qs = pick_quality_settings(quality)
     service = services.get_service(service_name)
@@ -96,7 +99,42 @@ def _process_episode(
         except Exception:
             pass
     local_path = ensure_local_audio(ep["source"])  # URL or path
-    text = service.transcribe(local_path, language=language)
+    clip_path = None
+    if clip_minutes and int(clip_minutes) > 0:
+        try:
+            seconds = int(clip_minutes) * 60
+            fd, tmp_path = tempfile.mkstemp(prefix="clip_", suffix=".wav")
+            os.close(fd)
+            # Transcode first N seconds to mono 16kHz WAV for speed/stability
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-t",
+                    str(seconds),
+                    "-i",
+                    str(local_path),
+                    "-ac",
+                    "1",
+                    "-ar",
+                    "16000",
+                    tmp_path,
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            clip_path = tmp_path
+        except Exception:
+            clip_path = None
+    try:
+        text = service.transcribe(clip_path or local_path, language=language)
+    finally:
+        if clip_path:
+            try:
+                Path(clip_path).unlink(missing_ok=True)
+            except Exception:
+                pass
     segs = getattr(service, "last_segments", None)
     # normalize optionally
     text = normalize_text(text)
@@ -137,6 +175,10 @@ def _process_episode(
             )
     else:
         chapters = [{"title": ep.get("title") or "Transcript", "text": text}]
+    # If episode description present, prepend as an intro page
+    ep_desc = ep.get("description")
+    if ep_desc:
+        chapters = [{"title": "Introduction", "text": str(ep_desc).strip()}] + chapters
     # Enrich with key takeaways if NLP enabled
     if (nlp_cfg or {}).get("takeaways"):
         try:
@@ -154,6 +196,7 @@ def _process_episode(
         "chapters": chapters,
         "summary": summary,
         "takeaways": takeaways,
+        "segments": segs,
     }
 
 
@@ -174,16 +217,47 @@ def cmd_process(args) -> int:
     if getattr(args, "semantic", False):
         nlp_cfg = dict(nlp_cfg)
         nlp_cfg["semantic"] = True
-    emit_md = bool(cfg.get("emit_markdown"))
+    outputs_cfg = cfg.get("outputs") or []
+    emit_md = bool(cfg.get("emit_markdown")) and not outputs_cfg
     md_template = cfg.get("markdown_template") or str(
         Path(__file__).resolve().parent / "templates" / "ebook.md.j2"
     )
+    clip_minutes = None
+    try:
+        clip_minutes = int(cfg.get("clip_minutes")) if cfg.get("clip_minutes") else None
+    except Exception:
+        clip_minutes = None
+    # CLI override
+    try:
+        if getattr(args, "clip_minutes", None) is not None:
+            clip_minutes = int(args.clip_minutes)
+    except Exception:
+        pass
     for ep in job.get("episodes", []):
-        res = _process_episode(ep, service_name, quality, language, nlp_cfg=nlp_cfg)
+        res = _process_episode(
+            ep,
+            service_name,
+            quality,
+            language,
+            nlp_cfg=nlp_cfg,
+            clip_minutes=clip_minutes,
+        )
         # Build document
         title = ep.get("title") or job.get("title") or "Podcast Transcript"
         author = cfg.get("author")
         cover_image = cfg.get("cover_image")
+        cover_bytes = None
+        # Try to fetch episode image (e.g., itunes:image) if present and is URL
+        ep_img = ep.get("image")
+        if ep_img and isinstance(ep_img, str) and ep_img.lower().startswith("http"):
+            try:
+                import requests  # type: ignore
+
+                r = requests.get(ep_img, timeout=20)
+                r.raise_for_status()
+                cover_bytes = r.content
+            except Exception:
+                cover_bytes = None
         chapters = [Chapter(c["title"], c["text"]) for c in res["chapters"]]
         if bilingual and service_name == "whisper":
             try:
@@ -199,64 +273,235 @@ def cmd_process(args) -> int:
                 ]
             except Exception:
                 pass
+        # Append attribution chapter (visible in EPUB/MD and part of composed text)
+        attribution = "Generated with Podcast-Transcription-CLI, developed by Johan Caripson."
+        try:
+            chapters.append(Chapter("Attribution", attribution))
+        except Exception:
+            pass
         doc = Document(
             title=title, author=author, chapters=chapters, summary=res.get("summary")
         )
-        out_path = out_dir / f"{Path(ep.get('slug') or title).stem}.epub"
-        export_book(
-            chapters=[{"title": ch.title, "text": ch.text} for ch in doc.chapters],
-            out_path=str(out_path),
-            fmt="epub",
-            title=doc.title,
-            author=doc.author,
-            cover_image=cover_image,
-            metadata={
-                "language": language,
-                "description": cfg.get("description"),
-                "keywords": cfg.get("keywords"),
-            },
-        )
-        # Optional: emit companion Markdown using Jinja2 template
-        if emit_md:
-            md_path = out_path.with_suffix(".md")
-            try:
-                md_text = render_markdown(
-                    md_template,
-                    {
-                        "title": doc.title,
-                        "author": doc.author,
-                        "summary": doc.summary,
-                        "topics": [ch.title for ch in doc.chapters],
-                        "takeaways": res.get("takeaways"),
-                        "chapters": [
-                            {"title": ch.title, "text": ch.text} for ch in doc.chapters
-                        ],
-                    },
-                )
-            except Exception:
-                # Fallback: minimal Markdown without Jinja2 dependency
-                lines = []
-                if doc.title:
-                    lines += [f"# {doc.title}", ""]
-                if doc.author:
-                    lines += [f"_by {doc.author}_", ""]
-                if doc.summary:
-                    lines += ["## Summary", "", str(doc.summary), ""]
-                topics = [ch.title for ch in doc.chapters]
-                if topics:
-                    lines += ["## Topics", ""]
-                    lines += ["- " + t for t in topics]
-                    lines += [""]
-                takeaways = res.get("takeaways")
-                if takeaways:
-                    lines += ["## Key Takeaways", ""]
-                    lines += ["- " + k for k in takeaways]
-                    lines += [""]
-                for ch in doc.chapters:
-                    lines += [f"## {ch.title}", "", ch.text, ""]
-                md_text = "\n".join(lines).rstrip() + "\n"
-            md_path.write_text(md_text, encoding="utf-8")
-        processed.append({"episode": ep, "output": str(out_path)})
+        base = Path(ep.get("slug") or title).stem
+        # Multi-output support via config.outputs
+        if outputs_cfg:
+            produced_paths = []
+            # Compose a plain body text from chapters for transcript-style exports
+            composed_all = []
+            for ch in doc.chapters:
+                composed_all.append(ch.title)
+                composed_all.append("")
+                composed_all.append(ch.text)
+                composed_all.append("")
+            body_all = "\n".join(composed_all).strip()
+            for out in outputs_cfg:
+                try:
+                    fmt = str(out.get("fmt") or out.get("format") or "").lower()
+                except Exception:
+                    fmt = ""
+                if not fmt:
+                    continue
+                out_path = out_dir / f"{base}.{fmt}"
+                title_ov = out.get("title") if isinstance(out, dict) else None
+                author_ov = out.get("author") if isinstance(out, dict) else None
+                # Optional CSS/template
+                css_file = out.get("epub_css_file") or out.get("css_file")
+                css_text = out.get("epub_css_text") or out.get("css_text")
+                template = out.get("template") or out.get("markdown_template")
+                metadata = {
+                    "language": language,
+                    "description": ep.get("description") or cfg.get("description"),
+                    "keywords": cfg.get("keywords"),
+                }
+                try:
+                    if fmt == "epub":
+                        export_transcript(
+                            text=body_all,
+                            out_path=str(out_path),
+                            fmt="epub",
+                            title=title_ov or doc.title,
+                            author=author_ov or doc.author,
+                            cover_image=cover_image,
+                            cover_image_bytes=cover_bytes,
+                            epub_css_file=css_file,
+                            epub_css_text=css_text,
+                            metadata=metadata,
+                            segments=res.get("segments"),
+                        )
+                        produced_paths.append(str(out_path))
+                    elif fmt == "md":
+                        md_path = out_path
+                        md_cover_flag = bool(out.get("md_include_cover"))
+                        cover_rel = None
+                        if md_cover_flag and (cover_bytes or cover_image):
+                            try:
+                                img_name = f"{base}-cover.jpg"
+                                img_path = out_dir / img_name
+                                if cover_bytes:
+                                    img_path.write_bytes(cover_bytes)
+                                elif cover_image:
+                                    cp = Path(cover_image)
+                                    if cp.exists():
+                                        img_path.write_bytes(cp.read_bytes())
+                                if img_path.exists():
+                                    cover_rel = img_name
+                            except Exception:
+                                cover_rel = None
+                        try:
+                            tmpl = template or md_template
+                            md_text = render_markdown(
+                                tmpl,
+                                {
+                                    "title": title_ov or doc.title,
+                                    "author": author_ov or doc.author,
+                                    "summary": doc.summary,
+                                    "topics": [ch.title for ch in doc.chapters],
+                                    "takeaways": res.get("takeaways"),
+                                    "chapters": [
+                                        {"title": ch.title, "text": ch.text}
+                                        for ch in doc.chapters
+                                    ],
+                                    "cover_image": cover_rel,
+                                },
+                            )
+                        except Exception:
+                            lines = []
+                            if cover_rel:
+                                lines += [f"![Cover]({cover_rel})", ""]
+                            if title_ov or doc.title:
+                                lines += [f"# {title_ov or doc.title}", ""]
+                            if author_ov or doc.author:
+                                lines += [f"_by {author_ov or doc.author}_", ""]
+                            if doc.summary:
+                                lines += ["## Summary", "", str(doc.summary), ""]
+                            topics = [ch.title for ch in doc.chapters]
+                            if topics:
+                                lines += ["## Topics", ""]
+                                lines += ["- " + t for t in topics]
+                                lines += [""]
+                            takeaways = res.get("takeaways")
+                            if takeaways:
+                                lines += ["## Key Takeaways", ""]
+                                lines += ["- " + k for k in takeaways]
+                                lines += [""]
+                            for ch in doc.chapters:
+                                lines += [f"## {ch.title}", "", ch.text, ""]
+                            md_text = "\n".join(lines).rstrip() + "\n"
+                        md_path.write_text(md_text, encoding="utf-8")
+                        produced_paths.append(str(md_path))
+                    else:
+                        body = body_all
+                        kwargs = {}
+                        if isinstance(out, dict):
+                            allowed_keys = {
+                                "pdf_font",
+                                "pdf_font_size",
+                                "pdf_margin",
+                                "pdf_cover_fullpage",
+                                "pdf_first_page_cover_only",
+                                "pdf_page_size",
+                                "pdf_orientation",
+                                "pdf_font_file",
+                                "epub_css_file",
+                                "epub_css_text",
+                                "auto_toc",
+                                "docx_cover_first",
+                                "docx_cover_width_inches",
+                            }
+                            for k, v in out.items():
+                                if k in allowed_keys:
+                                    kwargs[k] = v
+                        if fmt == "pdf":
+                            kwargs.setdefault(
+                                "pdf_footer",
+                                "Generated with Podcast-Transcription-CLI by Johan Caripson",
+                            )
+                        if fmt == "docx":
+                            kwargs.setdefault(
+                                "docx_footer_text",
+                                "Generated with Podcast-Transcription-CLI by Johan Caripson",
+                            )
+                        export_transcript(
+                            text=body,
+                            out_path=str(out_path),
+                            fmt=fmt,
+                            title=title_ov or doc.title,
+                            author=author_ov or doc.author,
+                            cover_image=cover_image,
+                            cover_image_bytes=cover_bytes,
+                            segments=res.get("segments"),
+                            metadata=metadata,
+                            **kwargs,
+                        )
+                        produced_paths.append(str(out_path))
+                except Exception as e:  # pragma: no cover - best-effort per-format
+                    try:
+                        print(f"Output {fmt} failed: {e}", file=sys.stderr)
+                    except Exception:
+                        pass
+            # Record artifacts
+            for pth in produced_paths:
+                processed.append({"episode": ep, "output": pth})
+        else:
+            # Default single EPUB path + optional Markdown
+            out_path = out_dir / f"{base}.epub"
+            export_book(
+                chapters=[
+                    {"title": ch.title, "text": ch.text} for ch in doc.chapters
+                ],
+                out_path=str(out_path),
+                fmt="epub",
+                title=doc.title,
+                author=doc.author,
+                cover_image=cover_image,
+                cover_image_bytes=cover_bytes,
+                metadata={
+                    "language": language,
+                    "description": ep.get("description") or cfg.get("description"),
+                    "keywords": cfg.get("keywords"),
+                },
+            )
+            # Optional: emit companion Markdown using Jinja2 template
+            if emit_md:
+                md_path = out_path.with_suffix(".md")
+                try:
+                    md_text = render_markdown(
+                        md_template,
+                        {
+                            "title": doc.title,
+                            "author": doc.author,
+                            "summary": doc.summary,
+                            "topics": [ch.title for ch in doc.chapters],
+                            "takeaways": res.get("takeaways"),
+                            "chapters": [
+                                {"title": ch.title, "text": ch.text} for ch in doc.chapters
+                            ],
+                        },
+                    )
+                except Exception:
+                    # Fallback: minimal Markdown without Jinja2 dependency
+                    lines = []
+                    if doc.title:
+                        lines += [f"# {doc.title}", ""]
+                    if doc.author:
+                        lines += [f"_by {doc.author}_", ""]
+                    if doc.summary:
+                        lines += ["## Summary", "", str(doc.summary), ""]
+                    topics = [ch.title for ch in doc.chapters]
+                    if topics:
+                        lines += ["## Topics", ""]
+                        lines += ["- " + t for t in topics]
+                        lines += [""]
+                    takeaways = res.get("takeaways")
+                    if takeaways:
+                        lines += ["## Key Takeaways", ""]
+                        lines += ["- " + k for k in takeaways]
+                        lines += [""]
+                    for ch in doc.chapters:
+                        lines += [f"## {ch.title}", "", ch.text, ""]
+                    md_text = "\n".join(lines).rstrip() + "\n"
+                md_path.write_text(md_text, encoding="utf-8")
+            processed.append({"episode": ep, "output": str(out_path)})
     job["artifacts"] = processed
     job["status"] = "processed"
     store.save_job(job)
@@ -339,7 +584,7 @@ def cmd_digest(args) -> int:
         )
     out_dir = Path("./out")
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"digest-{datetime.utcnow().date()}.epub"
+    out_path = out_dir / f"digest-{datetime.now(timezone.utc).date()}.epub"
     export_book(
         chapters,
         str(out_path),
@@ -370,6 +615,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--semantic",
         action="store_true",
         help="Enable semantic topic segmentation for this run",
+    )
+    proc.add_argument(
+        "--clip-minutes",
+        type=int,
+        default=None,
+        help="Limit transcription to the first N minutes (pre-clips audio)",
     )
     proc.set_defaults(func=cmd_process)
 

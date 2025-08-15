@@ -71,7 +71,6 @@ def build_parser() -> argparse.ArgumentParser:
             "mobi",
             "azw",
             "azw3",
-            "kfx",
             "srt",
             "vtt",
             "json",

@@ -14,7 +14,7 @@ Badges
 
 - Backends: `--service whisper|aws|gcp` (pluggable architecture).
 - Inputs: Local files, direct URLs, YouTube (via `yt-dlp`), and podcast RSS feeds (first enclosure).
-- Outputs: `--format txt|pdf|epub|mobi|azw|azw3|kfx|srt|vtt|json|md`.
+- Outputs: `--format txt|pdf|epub|mobi|azw|azw3|srt|vtt|json|md`.
   - Plus DOCX via optional extra: `docx`.
 - Export details:
   - PDF: headers/footers, optional cover page, auto‑TOC from segments, custom fonts and page size.
@@ -118,6 +118,13 @@ docker run --rm \
   -e GOOGLE_APPLICATION_CREDENTIALS="/secrets/gcp.json" \
   podcast-transcriber:latest \
   run --config /config.yml
+
+Unicode PDF note
+
+- Core PDF fonts (e.g., Helvetica) do not support full Unicode. To render non‑ASCII characters, embed a Unicode font via `--pdf-font-file` (CLI) or `pdf_font_file` (YAML outputs).
+- Our Docker images install DejaVu fonts. Recommended path: `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`.
+- Example (CLI): `--pdf-font-file /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`
+
 ```
 
 Notes
@@ -197,6 +204,7 @@ Subcommands:
 - `podcast-cli ingest --config config.yml` — Discover new episodes and create a job.
 - `podcast-cli process --job-id <id>` — Transcribe and build EPUB for a job.
   - Ad‑hoc semantic segmentation: add `--semantic` to this command to override YAML.
+  - Speed up test runs: add `--clip-minutes N` to limit transcription to the first N minutes (pre-clips audio).
 - `podcast-cli send --job-id <id>` — Email EPUBs to your Kindle address.
 - `podcast-cli run --config config.yml` — Run ingest → process → send in one go.
 - `podcast-cli digest --feed <name> --weekly` — Build a weekly digest EPUB.
@@ -216,6 +224,7 @@ quality: standard  # quick|standard|premium
 language: sv-SE
 author: Your Name
 output_dir: ./out
+clip_minutes: 1     # optional: clip audio to N minutes before transcribing (faster E2E)
 kindle:
   to_email: your_name@kindle.com
   from_email: sender@example.com
@@ -265,6 +274,18 @@ Bilingual EPUB (premium idea):
 
 ## CLI Overview
 
+Quality presets
+
+- quick: Uses a small Whisper model for fastest runs; ideal for CI smoke tests.
+- standard: Default balance of speed/quality; enables simple summarization and 10‑minute chapters.
+- premium: Largest Whisper model and richer processing (e.g., optional diarization/topic segmentation) for highest quality.
+
+Usage
+
+- Orchestrator YAML: set `quality: quick|standard|premium`. For fast iterations also add `clip_minutes: N` to limit transcription length.
+- Orchestrator CLI: `podcast-cli process --job-id ... --clip-minutes N` overrides YAML once.
+- CI: use `examples/recipes/oxford_quick.yml` (fast), locally use `examples/recipes/oxford_cc.yml` (standard) or `examples/recipes/oxford_premium.yml`.
+
 Required
 
 - `--url`: URL, local file, YouTube link, or RSS feed.
@@ -278,7 +299,7 @@ Input and batch
 Output and formats
 
 - `--output`: Output path (or directory for batch); defaults to stdout for `txt`.
-- `--format`: `txt`, `pdf`, `epub`, `mobi`, `azw`, `azw3`, `kfx`, `srt`, `vtt`, `json`, `md`.
+- `--format`: `txt`, `pdf`, `epub`, `mobi`, `azw`, `azw3`, `srt`, `vtt`, `json`, `md`.
 - `--title`, `--author`: Document metadata.
 
 Interactive mode
@@ -308,7 +329,14 @@ GCP options
 PDF/EPUB options
 
 - PDF: `--pdf-page-size A4|Letter`, `--pdf-orientation portrait|landscape`, `--pdf-margin <mm>`, `--pdf-font Arial`, `--pdf-font-size 12`, `--pdf-font-file path.ttf`, `--pdf-cover-fullpage`, `--pdf-first-page-cover-only`.
+  - Unicode: Set `--pdf-font-file` to a Unicode TTF/OTF (e.g., `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf` in our Docker images) for full character coverage.
+  - Cover: `--pdf-cover-fullpage` for helsidesomslag; `--pdf-first-page-cover-only` för att börja texten på ny sida.
 - EPUB/Kindle: `--epub-css-file style.css`, `--epub-theme minimal|reader|classic|dark` or `custom:/path.css`, `--cover-image cover.jpg`, `--auto-toc` (creates a simple TOC from segments; PDF also adds header/footer based on title/author).
+
+DOCX/Markdown options (via orchestrator outputs)
+
+- DOCX: `docx_cover_first: true` (omslag först), `docx_cover_width_inches: 6.0` (bredd).
+- Markdown: `md_include_cover: true` lägger in omslaget överst och sparar bilden bredvid `.md`.
 
 Caching and logging
 

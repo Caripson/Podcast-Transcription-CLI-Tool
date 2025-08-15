@@ -68,7 +68,7 @@ Requires Calibre's `ebook-convert` in PATH.
   --output transcript.azw3
 ```
 
-Other Kindle formats supported: `mobi`, `azw`, `kfx`.
+Other Kindle formats supported: `mobi`, `azw`.
 
 ## SRT/VTT with diarization
 

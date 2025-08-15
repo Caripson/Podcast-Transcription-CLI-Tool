@@ -1,5 +1,4 @@
 def test_discover_plugins_and_get(monkeypatch):
-    import types
     import importlib
 
     from podcast_transcriber.services.base import TranscriptionService

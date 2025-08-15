@@ -1,0 +1,34 @@
+# Oxford MediaPub feed — premium profile for high quality local runs
+service: whisper
+quality: premium      # largest Whisper model; best quality
+language: null
+output_dir: /out
+emit_markdown: true
+# clip_minutes: 1     # uncomment to speed up; remove for full episodes
+
+feeds:
+  - name: Oxford MediaPub
+    url: https://mediapub.it.ox.ac.uk/feeds/147402/audio.xml
+    categories: ["creative commons"]
+
+outputs:
+  - fmt: epub
+    epub_css_text: "body { font-family: Georgia, serif; }"
+  - fmt: md
+    template: src/podcast_transcriber/templates/ebook.md.j2
+    md_include_cover: true
+  - fmt: pdf
+    pdf_font: Arial
+    pdf_font_size: 12
+    pdf_margin: 15
+    pdf_font_file: /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+    pdf_cover_fullpage: true
+  - fmt: docx
+    docx_cover_first: true
+    docx_cover_width_inches: 6.0
+  - fmt: json
+  - fmt: srt
+  - fmt: vtt
+  - fmt: txt
+  - fmt: mobi
+  - fmt: azw3

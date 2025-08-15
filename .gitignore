@@ -26,3 +26,9 @@ site/
 
 # Env
 .env
+
+# E2E outputs and caches
+out/
+out-cli/
+.e2e-cache/
+.e2e-state/

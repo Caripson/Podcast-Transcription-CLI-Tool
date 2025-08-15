@@ -1,5 +1,5 @@
 import importlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def test_state_store_basic_ops(monkeypatch, tmp_path):
@@ -19,7 +19,7 @@ def test_state_store_basic_ops(monkeypatch, tmp_path):
 
     # list_recent should include recent jobs and filter older
     store.state["jobs"][0]["created_at"] = (
-        datetime.utcnow() - timedelta(days=1)
-    ).isoformat() + "Z"
+        datetime.now(timezone.utc) - timedelta(days=1)
+    ).isoformat()
     recent = store.list_recent(days=7, feed_name=None)
     assert isinstance(recent, list)

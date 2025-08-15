@@ -1,4 +1,5 @@
 import os
+import html
 import shutil
 import subprocess
 import tempfile
@@ -12,7 +13,6 @@ SUPPORTED_FORMATS = {
     "mobi",
     "azw",
     "azw3",
-    "kfx",
     "srt",
     "vtt",
     "json",
@@ -54,6 +54,16 @@ def export_transcript(
     pdf_footer: Optional[str] = None,
     auto_toc: bool = False,
     cover_image_bytes: Optional[bytes] = None,
+    # DOCX options
+    docx_cover_first: bool = False,
+    docx_cover_width_inches: Optional[float] = None,
+    docx_footer_text: Optional[str] = None,
+    docx_footer_include_page_number: bool = True,
+    # PDF attribution page
+    pdf_append_attribution: bool = False,
+    pdf_attribution_text: Optional[str] = None,
+    # DOCX attribution page
+    docx_attribution_text: Optional[str] = None,
 ) -> None:
     fmt = fmt.lower()
     if fmt not in SUPPORTED_FORMATS:
@@ -75,6 +85,7 @@ def export_transcript(
             font_size=pdf_font_size,
             margin=pdf_margin,
             cover_path=cover_image,
+            cover_image_bytes=cover_image_bytes,
             cover_fullpage=pdf_cover_fullpage,
             page_size=pdf_page_size,
             orientation=pdf_orientation,
@@ -83,6 +94,8 @@ def export_transcript(
             header_text=pdf_header,
             footer_text=pdf_footer,
             toc_segments=(segments if auto_toc else None),
+            append_attribution=pdf_append_attribution,
+            attribution_text=pdf_attribution_text,
         )
         return
 
@@ -133,6 +146,11 @@ def export_transcript(
             author=author,
             cover_image=cover_image,
             cover_image_bytes=cover_image_bytes,
+            cover_first=docx_cover_first,
+            cover_width_inches=docx_cover_width_inches,
+            attribution_text=None,
+            footer_text=docx_footer_text,
+            footer_page_number=bool(docx_footer_include_page_number),
         )
         return
 
@@ -158,6 +176,7 @@ def _export_pdf(
     font_size: int = 12,
     margin: int = 15,
     cover_path: Optional[str] = None,
+    cover_image_bytes: Optional[bytes] = None,
     cover_fullpage: bool = False,
     first_page_cover_only: bool = False,
     page_size: str = "A4",
@@ -166,6 +185,8 @@ def _export_pdf(
     header_text: Optional[str] = None,
     footer_text: Optional[str] = None,
     toc_segments: Optional[list[dict]] = None,
+    append_attribution: bool = False,
+    attribution_text: Optional[str] = None,
 ):
     try:
         from fpdf import FPDF  # type: ignore
@@ -216,14 +237,17 @@ def _export_pdf(
     else:
         pdf.set_font(font, size=font_size)
     # Optional cover on first page
-    if cover_path:
-        p = Path(cover_path)
-        if not p.exists():
-            raise FileNotFoundError(f"Cover image not found: {cover_path}")
+    if cover_path or cover_image_bytes:
         fd, tmp_cover = tempfile.mkstemp(prefix="cover_", suffix=".jpg")
         os.close(fd)
         try:
-            data = _prepare_cover_bytes(p)
+            if cover_path:
+                p = Path(cover_path)
+                if not p.exists():
+                    raise FileNotFoundError(f"Cover image not found: {cover_path}")
+                data = _prepare_cover_bytes(p)
+            else:
+                data = cover_image_bytes or b""
             Path(tmp_cover).write_bytes(data)
             if cover_fullpage:
                 # Full-page: draw image across page width, minimal margins
@@ -272,6 +296,16 @@ def _export_pdf(
         for line in para.splitlines():
             pdf.multi_cell(0, 8, line)
         pdf.ln(4)
+    if append_attribution and attribution_text:
+        try:
+            pdf.add_page()
+            pdf.set_font(font, size=font_size + 2)
+            pdf.cell(0, 10, "Attribution", ln=1, align="C")
+            pdf.ln(4)
+            pdf.set_font(font, size=font_size)
+            pdf.multi_cell(0, 8, attribution_text, align="C")
+        except Exception:
+            pass
     pdf.output(out_path)
 
 
@@ -354,15 +388,13 @@ def _export_epub(
 
     head = (
         "<head><meta charset='utf-8'/>"
-        + (f"<style>{epub.escape_html(combined_css)}</style>" if combined_css else "")
+        + (f"<style>{html.escape(combined_css)}</style>" if combined_css else "")
         + "</head>"
     )
     html_parts = [head, "<body>", "<h1>" + (title or "Transcript") + "</h1>"]
     for para in text.split("\n\n"):
         html_parts.append(
-            "<p>"
-            + "<br/>".join(epub.escape_html(p) for p in para.splitlines())
-            + "</p>"
+            "<p>" + "<br/>".join(html.escape(p) for p in para.splitlines()) + "</p>"
         )
     html_parts.append("</body>")
     content = "\n".join(html_parts)
@@ -377,9 +409,9 @@ def _export_epub(
             spk = seg.get("speaker")
             text_seg = seg.get("text", "")
             cur_html.append(
-                f"<h2 id='seg-{cur_idx}'>[{start}] {epub.escape_html(spk + ': ' if spk else '')}</h2>"
+                f"<h2 id='seg-{cur_idx}'>[{start}] {html.escape(spk + ': ' if spk else '')}</h2>"
             )
-            cur_html.append("<p>" + epub.escape_html(text_seg) + "</p>")
+            cur_html.append("<p>" + html.escape(text_seg) + "</p>")
             cur_len += len(text_seg)
             if cur_len > 4000:  # rough size threshold
                 ch = epub.EpubHtml(
@@ -409,9 +441,21 @@ def _export_epub(
         chapters.append(c)
 
     book.toc = tuple(chapters)
-    book.add_item(epub.EpubNavi())
-    book.add_item(epub.EpubNav())
-    book.add_item(epub.EpubNCX())
+    # Add navigation items with compatibility across ebooklib versions
+    try:
+        book.add_item(epub.EpubNav())
+    except Exception:
+        try:
+            book.add_item(epub.EpubNavi())
+        except Exception:
+            pass
+    try:
+        book.add_item(epub.EpubNcx())
+    except Exception:
+        try:
+            book.add_item(epub.EpubNCX())
+        except Exception:
+            pass
     book.spine = ["nav", *chapters]
     epub.write_epub(out_path, book)
 
@@ -423,6 +467,11 @@ def _export_docx(
     author: Optional[str],
     cover_image: Optional[str] = None,
     cover_image_bytes: Optional[bytes] = None,
+    cover_first: bool = False,
+    cover_width_inches: Optional[float] = None,
+    attribution_text: Optional[str] = None,
+    footer_text: Optional[str] = None,
+    footer_page_number: bool = True,
 ) -> None:
     try:
         import docx  # type: ignore
@@ -432,12 +481,18 @@ def _export_docx(
             "DOCX export requires 'python-docx'. Install with: pip install python-docx or pip install podcast-transcriber[docx]"
         ) from e
     doc = docx.Document()
-    if title:
-        doc.add_heading(title, level=0)
-    if author:
-        p = doc.add_paragraph()
-        run = p.add_run(author)
-        run.italic = True
+    # Helper to add cover page
+    def _add_cover(tmp_path: str):
+        doc.add_page_break()
+        try:
+            if cover_width_inches:
+                doc.add_picture(tmp_path, width=Inches(float(cover_width_inches)))
+            else:
+                doc.add_picture(tmp_path, width=Inches(6))
+            doc.add_page_break()
+        except Exception:
+            pass
+
     # Cover support: either file path or raw bytes written to a temp file
     if cover_image or cover_image_bytes:
         tmp_path = None
@@ -451,24 +506,77 @@ def _export_docx(
                 os.close(fd)
                 Path(tmp).write_bytes(cover_image_bytes)  # type: ignore[arg-type]
                 tmp_path = tmp
-            if tmp_path:
-                # Place cover on its own page
-                doc.add_page_break()
-                try:
-                    doc.add_picture(tmp_path, width=Inches(6))
-                    doc.add_page_break()
-                except Exception:
-                    pass
+            # order: cover first or after title/author
+            if tmp_path and cover_first:
+                _add_cover(tmp_path)
         finally:
             if cover_image_bytes and tmp_path:
                 try:
                     Path(tmp_path).unlink(missing_ok=True)
                 except Exception:
                     pass
+    # Title and author
+    if title:
+        doc.add_heading(title, level=0)
+    if author:
+        p = doc.add_paragraph()
+        run = p.add_run(author)
+        run.italic = True
+    # Cover after title/author when not cover_first
+    if (cover_image or cover_image_bytes) and not cover_first:
+        tmp_path2 = None
+        try:
+            if cover_image:
+                p = Path(cover_image)
+                if p.exists():
+                    tmp_path2 = str(p)
+            elif cover_image_bytes:
+                fd, tmp = tempfile.mkstemp(prefix="cover_", suffix=".jpg")
+                os.close(fd)
+                Path(tmp).write_bytes(cover_image_bytes)  # type: ignore[arg-type]
+                tmp_path2 = tmp
+            if tmp_path2:
+                _add_cover(tmp_path2)
+        finally:
+            if cover_image_bytes and tmp_path2:
+                try:
+                    Path(tmp_path2).unlink(missing_ok=True)
+                except Exception:
+                    pass
     # Body
     for para in text.split("\n\n"):
         doc.add_paragraph(para.strip())
         doc.add_paragraph("")
+    if attribution_text:
+        try:
+            doc.add_page_break()
+            doc.add_heading("Attribution", level=1)
+            doc.add_paragraph(attribution_text)
+        except Exception:
+            pass
+    # Footer: optional text and page number field
+    try:
+        from docx.oxml import OxmlElement  # type: ignore
+        from docx.oxml.ns import qn  # type: ignore
+
+        for section in doc.sections:
+            ftr = section.footer
+            p = ftr.paragraphs[0] if ftr.paragraphs else ftr.add_paragraph()
+            if footer_text:
+                p.add_run(str(footer_text) + "  ")
+            if footer_page_number:
+                r = p.add_run()
+                r._r.append(OxmlElement("w:fldChar"))
+                r._r[-1].set(qn("w:fldCharType"), "begin")
+                instr = OxmlElement("w:instrText")
+                instr.text = " PAGE "
+                r._r.append(instr)
+                r._r.append(OxmlElement("w:fldChar"))
+                r._r[-1].set(qn("w:fldCharType"), "separate")
+                r._r.append(OxmlElement("w:fldChar"))
+                r._r[-1].set(qn("w:fldCharType"), "end")
+    except Exception:
+        pass
     doc.save(out_path)
 
 
@@ -539,11 +647,7 @@ def export_book(
             combined_css = (combined_css or "") + css_from_file
         head = (
             "<head><meta charset='utf-8'/>"
-            + (
-                f"<style>{epub.escape_html(combined_css)}</style>"
-                if combined_css
-                else ""
-            )
+            + (f"<style>{html.escape(combined_css)}</style>" if combined_css else "")
             + "</head>"
         )
         epub_chapters = []
@@ -556,22 +660,31 @@ def export_book(
             parts = [
                 head,
                 "<body>",
-                f"<h1>{epub.escape_html(str(ch.get('title') or f'Chapter {idx}'))}</h1>",
+                f"<h1>{html.escape(str(ch.get('title') or f'Chapter {idx}'))}</h1>",
             ]
             for para in str(ch.get("text", "")).split("\n\n"):
                 parts.append(
-                    "<p>"
-                    + "<br/>".join(epub.escape_html(p) for p in para.splitlines())
-                    + "</p>"
+                    "<p>" + "<br/>".join(html.escape(p) for p in para.splitlines()) + "</p>"
                 )
             parts.append("</body>")
             node.content = "\n".join(parts)
             book.add_item(node)
             epub_chapters.append(node)
-        book.toc = tuple(epub_chapters)
-        book.add_item(epub.EpubNavi())
+    book.toc = tuple(epub_chapters)
+    try:
         book.add_item(epub.EpubNav())
-        book.add_item(epub.EpubNCX())
+    except Exception:
+        try:
+            book.add_item(epub.EpubNavi())
+        except Exception:
+            pass
+    try:
+        book.add_item(epub.EpubNcx())
+    except Exception:
+        try:
+            book.add_item(epub.EpubNCX())
+        except Exception:
+            pass
         book.spine = ["nav", *epub_chapters]
         epub.write_epub(out_path, book)
         return

@@ -23,7 +23,7 @@ Arguments:
 - AWS optional: `--aws-language-options sv-SE,en-US` to restrict detection languages.
 - GCP flags: `--gcp-alt-languages` (comma-separated list of alternates).
 - `--output`: Transcript file path; defaults to stdout.
-- Output: `--format` one of `txt`, `pdf`, `epub`, `mobi`, `azw`, `azw3`, `kfx`, `srt`, `vtt`, `json`, `md`.
+- Output: `--format` one of `txt`, `pdf`, `epub`, `mobi`, `azw`, `azw3`, `srt`, `vtt`, `json`, `md`.
 - Metadata: `--title`, `--author` for EPUB/PDF/Kindle.
 - EPUB CSS: `--epub-css-file` to embed basic styles into EPUB/Kindle.
  - EPUB theme: `--epub-theme minimal|reader|classic|dark` to enable a built-in CSS.
@@ -36,6 +36,55 @@ Arguments:
 - Batch and config: `--input-file list.txt` to process many; `--config config.toml` for defaults.
 - Cache and verbosity: `--cache-dir`, `--no-cache`, `--verbose`, `--quiet`.
 - Post-processing: `--normalize`, `--summarize N`.
+
+## Quality presets and speed tips
+
+- Quality presets (Whisper): set via orchestrator YAML `quality: quick|standard|premium`.
+  - `quick`: smallest model, fastest (good for CI smoke runs).
+  - `standard`: balanced default (recommended for local testing).
+  - `premium`: largest model, highest quality (slowest).
+- Clip transcription length (orchestrator):
+  - YAML: `clip_minutes: N` to pre‑clip audio before transcribing.
+  - CLI override: `podcast-cli process --job-id <id> --clip-minutes N`.
+- Cache models in Docker: mount a cache volume to reuse Whisper models between runs.
+  - Example (our E2E scripts do this): `-v "$(pwd)/.e2e-cache:/root/.cache"`.
+
+## Unicode PDF note
+
+Core PDF fonts do not support full Unicode. Use a Unicode TTF/OTF via `--pdf-font-file`.
+
+- In our Docker images, DejaVu fonts are installed. Recommended path:
+  - `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`
+- Example:
+
+```bash
+./Transcribe_podcast_to_text.sh \
+  --url ./examples/tone.wav \
+  --service whisper \
+  --format pdf \
+  --pdf-font-file /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf \
+  --output transcript.pdf
+```
+
+## Per‑format options via orchestrator outputs
+
+- PDF: `pdf_cover_fullpage: true`, `pdf_first_page_cover_only: true`, `pdf_font_file: /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`
+- DOCX: `docx_cover_first: true`, `docx_cover_width_inches: 6.0`
+- Markdown: `md_include_cover: true`
+
+Example (YAML):
+
+```yaml
+outputs:
+  - fmt: pdf
+    pdf_font_file: /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+    pdf_cover_fullpage: true
+  - fmt: docx
+    docx_cover_first: true
+    docx_cover_width_inches: 6.0
+  - fmt: md
+    md_include_cover: true
+```
 
 Kindle formats require Calibre’s `ebook-convert` in PATH; MOBI/AZW/AZW3/KFX are produced by converting a temporary EPUB.
 

@@ -1,15 +1,18 @@
 # syntax=docker/dockerfile:1
 FROM python:3.12-slim as app
 
-ARG PIP_EXTRAS="export,templates,ingest,orchestrator,env,docx"
+ARG DEBIAN_FRONTEND=noninteractive
+ARG PIP_EXTRAS="export,templates,ingest,orchestrator,env,docx,whisper"
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# System deps (keep minimal). ffmpeg is useful for Whisper/local audio tooling.
+# System deps: ffmpeg for audio; calibre provides ebook-convert for Kindle outputs
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core \
+ && apt-get install -y --no-install-recommends \
+      ffmpeg \
+      calibre \
  && rm -rf /var/lib/apt/lists/*
 
 # Copy project files
@@ -20,6 +23,6 @@ COPY src ./src
 RUN python -m pip install --upgrade pip \
  && python -m pip install ".[${PIP_EXTRAS}]"
 
-# Default to CLI help; override the command at runtime for other entry points.
+# Default to CLI help; override command at runtime.
 ENTRYPOINT ["podcast-transcriber"]
 CMD ["--help"]

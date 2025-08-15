@@ -1,0 +1,29 @@
+# Minimal end-to-end recipe for Docker E2E script
+# Use with: scripts/e2e_docker.sh -c examples/recipes/e2e_whisper.yml -n 2
+
+service: whisper           # transcription backend
+quality: standard          # or: quick, premium
+language: null             # auto-detect
+output_dir: /out           # mounted from host by the script
+
+# Emit companion Markdown next to EPUB
+emit_markdown: true
+# markdown_template: src/podcast_transcriber/templates/ebook.md.j2
+
+# NLP options (optional)
+nlp:
+  semantic: false          # semantic topic segmentation (requires embeddings)
+  takeaways: false         # generate key takeaways
+
+# Feeds to ingest. Provide either url, podcastindex_feedid, or podcast_guid.
+feeds:
+  - name: Example Feed
+    url: https://feeds.simplecast.com/54nAGcIl
+    # podcastindex_feedid: "12345"
+    # podcast_guid: "some-guid-here"
+
+# Future options (not yet used by CLI; reserved for the script/ingestion enhancements):
+# limit: 2                  # handled by the e2e script via state trimming
+# categories: ["Technology", "AI"]
+# use_itunes_image: true    # planned: auto-extract cover image from feed
+

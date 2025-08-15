@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +16,7 @@ STATE_PATH = STATE_DIR / "state.json"
 
 
 def _now_iso() -> str:
-    return datetime.utcnow().isoformat() + "Z"
+    return datetime.now(timezone.utc).isoformat()
 
 
 class StateStore:
@@ -38,7 +38,7 @@ class StateStore:
         )
 
     def create_job(self, config: dict[str, Any], feed_name: str | None = None) -> dict:
-        job_id = f"job-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        job_id = f"job-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
         # Placeholder episodes; proper feed fetch should populate these
         episodes = []  # populated by orchestrator.ingest using ingestion.feed
         job = {
@@ -78,11 +78,13 @@ class StateStore:
 
     def list_recent(self, days: int = 7, feed_name: str | None = None) -> list[dict]:
         # naive: collect episodes from recent jobs
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         out = []
         for j in self.state.get("jobs", []):
             try:
                 dt = datetime.fromisoformat(j.get("created_at", "").rstrip("Z"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
             except Exception:
                 continue
             if dt < cutoff:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 
@@ -103,6 +103,96 @@ def _podcastindex_by_id(feedid: Optional[str] = None, guid: Optional[str] = None
     return None
 
 
+def _lower_list(vals: list[str | None]) -> list[str]:
+    return [str(v).strip().lower() for v in vals if v]
+
+
+def _entry_categories(entry, feed_categories: list[str] | None = None) -> list[str]:
+    cats: list[str] = []
+    try:
+        tags = getattr(entry, "tags", None)
+        if tags:
+            for t in tags:
+                term = getattr(t, "term", None) or getattr(t, "label", None)
+                if term:
+                    cats.append(str(term))
+    except Exception:
+        pass
+    if isinstance(entry, dict):
+        for k in ("categories", "category"):
+            v = entry.get(k)
+            if isinstance(v, (list, tuple)):
+                cats.extend(map(str, v))
+            elif v:
+                cats.append(str(v))
+    if feed_categories:
+        cats.extend(feed_categories)
+    return _lower_list(cats)
+
+
+def _entry_image(entry, parsed=None) -> Optional[str]:
+    # Try entry-level iTunes image variants
+    try:
+        img = getattr(entry, "image", None)
+        if isinstance(img, dict):
+            href = img.get("href") or img.get("url")
+            if href:
+                return str(href)
+        elif isinstance(img, str) and img:
+            return img
+        ii = getattr(entry, "itunes_image", None)
+        if isinstance(ii, dict):
+            href = ii.get("href") or ii.get("url")
+            if href:
+                return str(href)
+        href = getattr(entry, "itunes_image_href", None)
+        if href:
+            return str(href)
+    except Exception:
+        pass
+    # Fallback to feed-level
+    try:
+        if parsed is not None:
+            fimg = getattr(parsed.feed, "image", None)
+            if isinstance(fimg, dict):
+                href = fimg.get("href") or fimg.get("url")
+                if href:
+                    return str(href)
+            href = getattr(parsed.feed, "itunes_image", None)
+            if isinstance(href, dict):
+                v = href.get("href") or href.get("url")
+                if v:
+                    return str(v)
+            href2 = getattr(parsed.feed, "image_href", None)
+            if href2:
+                return str(href2)
+    except Exception:
+        pass
+    return None
+
+
+def _entry_description(entry, parsed=None) -> Optional[str]:
+    for attr in ("summary", "description", "subtitle"):
+        try:
+            v = getattr(entry, attr, None)
+            if v:
+                return str(v)
+        except Exception:
+            pass
+        if isinstance(entry, dict) and entry.get(attr):
+            return str(entry.get(attr))
+    # Fallback: feed-level description
+    try:
+        if parsed is not None:
+            for attr in ("subtitle", "description", "summary"):
+                v = getattr(parsed.feed, attr, None)
+                if v:
+                    return str(v)
+    except Exception:
+        pass
+    return None
+
+
 def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
     """Discover new episodes from configured feeds using feedparser.
 
@@ -129,6 +219,8 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
             # Prefer PodcastIndex when API creds present; fall back to feedparser
             pi = _try_podcastindex(url)
         entries = []
+        categories_filter = _lower_list(f.get("categories", []) if isinstance(f.get("categories"), (list, tuple)) else [f.get("categories")])
+        feed_categories: list[str] = []
         if pi and isinstance(pi, dict) and pi.get("items"):
             for it in pi.get("items", []):
                 entries.append(
@@ -138,12 +230,29 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
                         "link": it.get("link"),
                         "enclosureUrl": it.get("enclosureUrl")
                         or it.get("enclosure_url"),
+                        "categories": list(it.get("categories", {}).values()) if isinstance(it.get("categories"), dict) else it.get("categories"),
+                        "image": (it.get("image") or it.get("imageUrl") or it.get("image_url")),
+                        "description": it.get("description"),
                     }
                 )
         else:
             if not url:
                 continue
             parsed = _load_feed(url)
+            # Feed-level categories (e.g., <category>...)
+            try:
+                tags = getattr(parsed.feed, "tags", None)
+                if tags:
+                    for t in tags:
+                        term = getattr(t, "term", None) or getattr(t, "label", None)
+                        if term:
+                            feed_categories.append(str(term))
+                else:
+                    c = getattr(parsed.feed, "category", None)
+                    if c:
+                        feed_categories.append(str(c))
+            except Exception:
+                pass
             for entry in parsed.entries or []:
                 entries.append(entry)
         for entry in entries:
@@ -178,6 +287,13 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
                 media_url = link
             if not media_url:
                 continue
+            # Category filtering if requested
+            if categories_filter:
+                cats = _entry_categories(entry, feed_categories)
+                if not any(c in cats for c in categories_filter):
+                    continue
+            image_url = _entry_image(entry, parsed if 'parsed' in locals() else None)
+            desc = _entry_description(entry, parsed if 'parsed' in locals() else None)
             ep = {
                 "feed": name,
                 "title": title,
@@ -186,7 +302,10 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
                 ),
                 "source": media_url,
                 "guid": guid or link,
-                "created_at": datetime.utcnow().isoformat() + "Z",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "image": image_url,
+                "description": desc,
+                "categories": _entry_categories(entry, feed_categories),
             }
             episodes.append(ep)
             store.mark_seen(name, guid or link)
