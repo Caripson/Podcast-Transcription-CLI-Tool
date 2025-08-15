@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 from podcast_transcriber.exporters.exporter import export_transcript
 

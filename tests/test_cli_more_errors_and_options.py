@@ -1,6 +1,5 @@
-import io
 from pathlib import Path
-from unittest import mock
+import pytest
 
 import podcast_transcriber.cli as cli
 
@@ -25,11 +24,9 @@ def test_cli_non_txt_requires_output(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "podcast_transcriber.services.get_service", lambda name: DummyService()
     )
-    try:
+    with pytest.raises(SystemExit) as e:
         cli.main(["--url", str(audio), "--service", "whisper", "--format", "pdf"])
-        assert False, "expected SystemExit due to missing --output"
-    except SystemExit as e:
-        assert "--output is required" in str(e)
+    assert "--output is required" in str(e.value)
 
 
 def test_cli_epub_theme_custom_css(tmp_path, monkeypatch):
