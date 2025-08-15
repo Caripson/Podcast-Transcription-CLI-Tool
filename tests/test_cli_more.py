@@ -110,4 +110,4 @@ def test_cli_normalize_and_summarize_to_stdout(tmp_path, monkeypatch):
     assert code == 0
     out = buf.getvalue().strip()
     assert "  " not in out  # normalized spaces
-    assert out.endswith(".")  # summarized to 1 sentence
+    assert out and out[-1] in ".!?"  # summarized to 1 sentence

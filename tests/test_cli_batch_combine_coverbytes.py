@@ -39,9 +39,7 @@ def test_cli_batch_combine_cover_bytes_from_cover_url(tmp_path, monkeypatch):
         def raise_for_status(self):
             return None
 
-    import sys
-
-    sys.modules["requests"] = type("R", (), {"get": lambda *a, **k: Resp()})
+    monkeypatch.setattr("requests.get", lambda *a, **k: Resp(), raising=False)
 
     captured = {}
 

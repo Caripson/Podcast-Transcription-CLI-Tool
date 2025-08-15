@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 
 import podcast_transcriber.cli as cli
@@ -35,8 +34,8 @@ def test_cli_cover_fallback_requests_used(tmp_path, monkeypatch):
 
         def raise_for_status(self):
             return None
-
-    sys.modules["requests"] = type("R", (), {"get": lambda *a, **k: Resp()})
+    
+    monkeypatch.setattr("requests.get", lambda *a, **k: Resp(), raising=False)
 
     captured = {}
 
