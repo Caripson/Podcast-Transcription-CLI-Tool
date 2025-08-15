@@ -5,6 +5,7 @@ Transcribe podcasts and other audio from a URL or local file. Choose between loc
 Badges
 
 - CI: ![CI](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/ci.yml/badge.svg)
+- Lint: [![Ruff](https://img.shields.io/badge/lint-ruff-blue)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/ci.yml)
 - Docs: [![Docs](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml)
 - PyPI: [![PyPI - Test](https://img.shields.io/badge/PyPI-test-brightgreen)](https://pypi.org/project/podcast-transcriber/)
 - Smoke: [![Smoke](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/smoke.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/smoke.yml)
