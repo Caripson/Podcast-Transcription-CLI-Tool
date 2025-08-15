@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 from unittest import mock
 
 from podcast_transcriber.exporters.exporter import export_transcript
@@ -45,8 +46,6 @@ def test_pdf_custom_font_and_header_footer(tmp_path, monkeypatch):
 
         def image(self, *args, **kwargs):
             pass
-
-    import sys
 
     sys.modules["fpdf"] = mock.MagicMock(FPDF=FakePDF)
 
@@ -95,8 +94,6 @@ def test_pdf_font_file_missing_raises(tmp_path, monkeypatch):
 
         def output(self, path):
             Path(path).write_bytes(b"%PDF-1.4\n...")
-
-    import sys
 
     sys.modules["fpdf"] = mock.MagicMock(FPDF=FakePDF)
 

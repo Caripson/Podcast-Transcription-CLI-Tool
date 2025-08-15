@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 from unittest import mock
 
 from podcast_transcriber.exporters.exporter import export_transcript
@@ -60,12 +61,20 @@ def test_docx_cover_first_and_footer(tmp_path, monkeypatch):
         def save(self, path):
             Path(path).write_bytes(b"DOCX")
 
-    import sys
-
     # Fake required modules/classes
     sys.modules["docx"] = type("M", (), {"Document": FakeDoc})
     sys.modules["docx.shared"] = type("S", (), {"Inches": lambda x: x})
-    sys.modules["docx.oxml"] = type("O", (), {"OxmlElement": lambda name: type("E", (), {"set": lambda self, *a, **k: None, "text": ""})()})
+
+    class _FakeElement:
+        def set(self, *a, **k):
+            return None
+
+        text = ""
+
+    def _OxmlElement(_name):  # noqa: N802 (match API name)
+        return _FakeElement()
+
+    sys.modules["docx.oxml"] = type("O", (), {"OxmlElement": staticmethod(_OxmlElement)})
     sys.modules["docx.oxml.ns"] = type("N", (), {"qn": lambda x: x})
 
     export_transcript(
