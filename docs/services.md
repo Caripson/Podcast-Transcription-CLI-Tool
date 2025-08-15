@@ -17,15 +17,15 @@ The tool supports multiple transcription services behind a common interface.
 
 - Pros: Scalability, robust managed service.
 - Requirements: `boto3`, AWS credentials, and `AWS_TRANSCRIBE_S3_BUCKET` set.
-- Diarisering: `--speakers N` aktiverar `ShowSpeakerLabels` och grupperar ord till segments per talare.
-- MVP status: Minimal integration med tillagd röstdiarisering och word-level parsing (upload → start job → poll → fetch transcript).
+- Diarization: `--speakers N` enables `ShowSpeakerLabels` and groups words into speaker segments.
+- MVP status: Minimal integration with speaker diarization and word-level parsing (upload → start job → poll → fetch transcript).
 
 ## 🟦 GCP Speech‑to‑Text
 
 - Pros: High accuracy.
 - Requirements: `google-cloud-speech`, GCP credentials (`GOOGLE_APPLICATION_CREDENTIALS` or ADC).
-- Diarisering: `--speakers N` aktiverar diarization; för längre ljud använd `--gcp-longrunning` (long_running_recognize).
-- Status: Synkron integration med möjlighet till long‑running och diarization; ordnivå och speaker‑taggar parse:as till segment.
+- Diarization: `--speakers N` enables diarization; for long audio use `--gcp-longrunning` (long_running_recognize).
+- Status: Synchronous integration with optional long‑running and diarization; word‑level timestamps and speaker tags are parsed into segments.
 
 ## ➕ Add a new service
 

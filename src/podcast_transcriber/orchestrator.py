@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import re
 import subprocess
 import tempfile
 from datetime import datetime, timezone
@@ -30,6 +31,15 @@ def load_yaml_config(path: str) -> dict:
     if not p.exists():
         raise SystemExit(f"Config file not found: {path}")
     return yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+
+
+def _sanitize_filename(name: str) -> str:
+    # Replace characters invalid on Windows/NTFS and problematic in artifacts
+    s = str(name)
+    s = re.sub(r'[<>:"/\\|?\r\n*]+', '-', s)
+    s = re.sub(r'\s+', '-', s)
+    s = s.strip(' .-_')
+    return s or 'item'
 
 
 def pick_quality_settings(quality: str) -> dict:
@@ -284,7 +294,7 @@ def cmd_process(args) -> int:
         doc = Document(
             title=title, author=author, chapters=chapters, summary=res.get("summary")
         )
-        base = Path(ep.get("slug") or title).stem
+        base = _sanitize_filename(Path(ep.get("slug") or title).stem)
         # Multi-output support via config.outputs
         if outputs_cfg:
             produced_paths = []

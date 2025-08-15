@@ -127,6 +127,89 @@ Unicode PDF note
 - Our Docker images install DejaVu fonts. Recommended path: `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`.
 - Example (CLI): `--pdf-font-file /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`
 
+## End-to-End Recipes (Oxford)
+
+This repo includes ready-to-run recipes to exercise the full pipeline via Docker. They fetch a Creative Commons podcast RSS feed, transcribe the latest episodes, and produce multiple output formats.
+
+- Recipes:
+  - `examples/recipes/oxford_quick.yml`: fastest profile for PR/CI (small Whisper model, `clip_minutes: 1`, all outputs).
+  - `examples/recipes/oxford_cc.yml`: standard profile (balanced quality).
+  - `examples/recipes/oxford_premium.yml`: highest quality (slowest).
+
+- Run with Docker (Calibre image recommended to enable Kindle formats):
+  - Build (optional, the script can build for you):
+    - `docker build -f Dockerfile.calibre -t podcast-transcriber:calibre .`
+  - Orchestrator E2E (pick a recipe and limit N episodes):
+    - `./scripts/e2e_docker.sh -c examples/recipes/oxford_quick.yml -n 2 --fresh-state --dockerfile Dockerfile.calibre --image podcast-transcriber:calibre`
+  - Artifacts end up in `./out/`.
+
+- What the script does:
+  - Ingests the feed(s), creates a job id, trims to the latest N episodes.
+  - Processes via orchestrator (`podcast-cli process`) and writes outputs per `outputs:` block in the YAML.
+  - Uses a local cache `./.e2e-cache -> /root/.cache` to reuse Whisper model downloads.
+  - `--fresh-state` deletes only the orchestrator state for deterministic runs; it does not clear the Whisper cache.
+
+### Customizing a recipe
+
+- Feeds: under `feeds:` provide one or more entries. You can use any RSS URL, PodcastIndex id/guid, or categories filter.
+  - By RSS URL:
+    - `feeds: [ { name: MyFeed, url: https://example.com/feed.xml } ]`
+  - By PodcastIndex (with env creds present):
+    - `feeds: [ { name: ById, podcastindex_feedid: "12345" } ]`
+  - Category filter (case-insensitive):
+    - `categories: ["creative commons", "technology"]`
+
+- Quality presets:
+  - `quality: quick|standard|premium` (affects Whisper model and some defaults).
+  - Speed tip: `clip_minutes: 1` pre-clips audio before transcribing for faster runs.
+
+- Outputs: choose formats and per-format options in the `outputs:` array.
+  - Common formats: `epub, pdf, docx, md, txt, json, srt, vtt, mobi, azw3` (Kindle uses Calibre).
+  - EPUB:
+    - `epub_css_text:` or `epub_css_file:` to embed CSS.
+  - PDF:
+    - `pdf_font_file:` set a Unicode TTF (e.g., `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf` in Docker).
+    - `pdf_cover_fullpage: true` for a full-page cover before the transcript.
+    - `pdf_first_page_cover_only: true` to start text on a new page after the cover.
+  - DOCX:
+    - `docx_cover_first: true` to place cover first.
+    - `docx_cover_width_inches: 6.0` to control cover width.
+  - Markdown:
+    - `md_include_cover: true` to place cover image at the top and save the image alongside the `.md` file.
+
+- Cover & metadata:
+  - Orchestrator tries to fetch the episode’s `itunes:image` as cover. You can override with `cover_image: /path/to/file.jpg`.
+  - Common metadata can be set at the top-level (e.g., `author`, `language`), and passed into exports.
+
+### Testing with your own RSS feed
+
+- Duplicate a recipe (e.g., copy `examples/recipes/oxford_cc.yml` to `my_feed.yml`).
+- Update:
+  - `feeds: - name: MyFeed, url: https://my/podcast.rss`
+  - Optionally `categories: [...]` to filter entries.
+  - `quality:` to suit your needs.
+  - `clip_minutes:` for quicker tests.
+  - `outputs:` to the list of formats you want to verify.
+- Run:
+  - `./scripts/e2e_docker.sh -c my_feed.yml -n 2 --fresh-state --dockerfile Dockerfile.calibre --image podcast-transcriber:calibre`
+
+### Running without the script
+
+- Direct orchestrator run from Docker (YAML config inside the container):
+  - `docker run --rm --entrypoint podcast-cli -v "$(pwd)":/workspace -w /workspace podcast-transcriber:calibre ingest --config /workspace/examples/recipes/oxford_cc.yml`
+  - Then process:
+  - `docker run --rm --entrypoint podcast-cli -v "$(pwd)":/workspace -w /workspace podcast-transcriber:calibre process --job-id <id>`
+
+- Direct from host (after installing extras):
+  - `pip install -e .[orchestrator,ingest,templates,export,docx,whisper]`
+  - `podcast-cli ingest --config examples/recipes/oxford_cc.yml`
+  - `podcast-cli process --job-id <id> [--clip-minutes N]`
+
+Notes
+- Kindle conversion (MOBI/AZW3) requires Calibre’s `ebook-convert`; use `Dockerfile.calibre` image or install Calibre locally.
+- KFX is not included in distro Calibre; AZW3 is the recommended modern Kindle format.
+- If you hit state “No new episodes discovered”, pass `--fresh-state` to the script (or remove state at `$PODCAST_STATE_DIR`).
+
 ```
 
 Notes
@@ -332,13 +415,13 @@ PDF/EPUB options
 
 - PDF: `--pdf-page-size A4|Letter`, `--pdf-orientation portrait|landscape`, `--pdf-margin <mm>`, `--pdf-font Arial`, `--pdf-font-size 12`, `--pdf-font-file path.ttf`, `--pdf-cover-fullpage`, `--pdf-first-page-cover-only`.
   - Unicode: Set `--pdf-font-file` to a Unicode TTF/OTF (e.g., `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf` in our Docker images) for full character coverage.
-  - Cover: `--pdf-cover-fullpage` for helsidesomslag; `--pdf-first-page-cover-only` för att börja texten på ny sida.
+  - Cover: `--pdf-cover-fullpage` for a full-page cover; `--pdf-first-page-cover-only` to start the transcript on the next page.
 - EPUB/Kindle: `--epub-css-file style.css`, `--epub-theme minimal|reader|classic|dark` or `custom:/path.css`, `--cover-image cover.jpg`, `--auto-toc` (creates a simple TOC from segments; PDF also adds header/footer based on title/author).
 
 DOCX/Markdown options (via orchestrator outputs)
 
-- DOCX: `docx_cover_first: true` (omslag först), `docx_cover_width_inches: 6.0` (bredd).
-- Markdown: `md_include_cover: true` lägger in omslaget överst och sparar bilden bredvid `.md`.
+- DOCX: `docx_cover_first: true` (place cover first), `docx_cover_width_inches: 6.0` (control cover width).
+- Markdown: `md_include_cover: true` places the cover at the top and saves the image next to the `.md` file.
 
 Caching and logging
 
@@ -442,7 +525,7 @@ KDP pipeline (EPUB) for a single episode
   --url ./episode.mp3 \
   --service whisper \
   --kdp \
-  --title "Podcasten: Säsong 1 – Avsnitt 1" \
+  --title "Podcast: Season 1 – Episode 1" \
   --author "Ditt Namn" \
   --description "En transkriberad version av avsnittet..." \
   --keywords "podcast, svensk, teknik" \
@@ -465,8 +548,8 @@ EOF
   --kdp \
   --title "Min Podcast – Volym 1" \
   --author "Ditt Namn" \
-  --description "Transkriptioner av säsongens bästa avsnitt" \
-  --keywords "podcast, svenska, samhälle"
+  --description "Transcriptions of the best episodes of the season" \
+  --keywords "podcast, swedish, society"
 ```
 
 DOCX manuscript (requires extra)

@@ -1,6 +1,6 @@
 # 🚀 Quickstart
 
-Before running, ensure dependencies are installed. See [Dependencies & Extras](dependencies.md) for core and optional installs.
+Before running, ensure dependencies are installed. See [Dependencies & Extras](dependencies.md) for core and optional installs. For a full end‑to‑end Docker run, see [End-to-end recipes (Oxford)](#end-to-end-recipes-oxford).
 
 Run via the Bash script:
 
@@ -96,6 +96,51 @@ source .venv/bin/activate
 pip install -e .
 pip install pytest  # for tests
 ```
+
+## End-to-end recipes (Oxford)
+
+Use the included YAML recipes to run the full ingest→process flow with Docker.
+
+- Quick (fastest for CI/PR): `examples/recipes/oxford_quick.yml` (small model, `clip_minutes: 1`).
+- Standard: `examples/recipes/oxford_cc.yml`.
+- Premium: `examples/recipes/oxford_premium.yml`.
+
+Run with the Calibre image to enable Kindle formats:
+
+```bash
+docker build -f Dockerfile.calibre -t podcast-transcriber:calibre .
+./scripts/e2e_docker.sh -c examples/recipes/oxford_quick.yml -n 2 --fresh-state \
+  --dockerfile Dockerfile.calibre --image podcast-transcriber:calibre
+```
+
+Customize a copy for your feed:
+
+```yaml
+feeds:
+  - name: MyFeed
+    url: https://example.com/feed.xml
+    categories: ["creative commons", "technology"]
+service: whisper
+quality: standard
+clip_minutes: 1
+outputs:
+  - fmt: epub
+  - fmt: pdf
+    pdf_font_file: /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+    pdf_cover_fullpage: true
+  - fmt: docx
+    docx_cover_first: true
+    docx_cover_width_inches: 6.0
+  - fmt: md
+    md_include_cover: true
+  - fmt: json
+```
+
+Notes
+
+- Use `--fresh-state` to ignore the previous seen‑state and re‑ingest.
+- Whisper models are cached in `./.e2e-cache` inside the container for faster runs.
+- Prefer AZW3 for Kindle sideloading; KFX output isn’t available in distro Calibre.
 
 Run tests:
 

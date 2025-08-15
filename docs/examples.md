@@ -2,6 +2,8 @@
 
 Below are sample commands to export transcripts to various formats.
 
+For a full end‑to‑end flow that fetches a podcast RSS feed, trims to the latest N episodes, and generates multiple outputs via Docker, see [Quickstart → End-to-end recipes (Oxford)](usage.md#end-to-end-recipes-oxford).
+
 ## TXT
 
 ```bash

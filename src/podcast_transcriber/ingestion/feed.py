@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import time
+import re
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -101,6 +102,15 @@ def _podcastindex_by_id(feedid: Optional[str] = None, guid: Optional[str] = None
             "episodes/bypodcastguid", {"guid": guid, "max": 20}
         )
     return None
+
+
+def _sanitize_slug(name: str) -> str:
+    s = (name or "").lower()
+    s = s.replace(' ', '-')
+    s = re.sub(r'[<>:"/\\|?\r\n*]+', '-', s)
+    s = re.sub(r'\s+', '-', s)
+    s = s.strip(' .-_')
+    return s or 'item'
 
 
 def _lower_list(vals: list[str | None]) -> list[str]:
@@ -305,9 +315,7 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
             ep = {
                 "feed": name,
                 "title": title,
-                "slug": (
-                    title.lower().replace(" ", "-")[:40] if title else f"{name}-ep"
-                ),
+                "slug": _sanitize_slug(title)[:60] if title else _sanitize_slug(f"{name}-ep"),
                 "source": media_url,
                 "guid": guid or link,
                 "created_at": datetime.now(timezone.utc).isoformat(),

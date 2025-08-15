@@ -11,16 +11,16 @@ Example session
 
 ```
 $ podcast-transcriber --interactive
-Vilken fil/URL vill du transkribera?: https://youtu.be/abc123
-Tillgängliga tjänster:
+Which file/URL do you want to transcribe?: https://youtu.be/abc123
+Available services:
   1. whisper
   2. aws
   3. gcp
-Vilken tjänst vill du använda? (namn eller nummer): whisper
-Tillgängliga format: azw, azw3, epub, json, kfx, md, mobi, pdf, srt, txt, vtt
-Vilket output-format vill du ha? [txt]: json
-Sökväg till outputfil? (krävs för icke-txt): out/transcript.json
-Språkkod? (t.ex. sv, en-US) []:
+Which service do you want to use? (name or number): whisper
+Available formats: azw, azw3, epub, json, md, mobi, pdf, srt, txt, vtt
+Which output format do you want? [txt]: json
+Output file path? (required for non-txt): out/transcript.json
+Language code? (e.g., sv, en-US) []:
 ```
 
 Notes
