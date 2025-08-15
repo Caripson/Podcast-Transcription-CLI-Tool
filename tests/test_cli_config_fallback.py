@@ -1,24 +1,20 @@
+import sys
+
 import podcast_transcriber.cli as cli
 
 
 def test_load_config_uses_tomli_fallback(tmp_path, monkeypatch):
     # Create a minimal TOML config
     cfg = tmp_path / "conf.toml"
-    cfg.write_text(
-        "\n".join(
-            [
-                "format = \"md\"",
-                "url = \"X:/dummy.wav\"",
-                "service = \"whisper\"",
-                f"output = \"{str(tmp_path / 'o.md')}\"",
-                "",
-            ]
-        ),
-        encoding="utf-8",
+    cfg_text = (
+        'format = "md"\n'
+        'url = "X:/dummy.wav"\n'
+        'service = "whisper"\n'
+        f'output = "{tmp_path / "o.md"}"\n'
     )
+    cfg.write_text(cfg_text, encoding="utf-8")
 
     # Remove tomllib and provide a fake tomli with basic loads()
-    import sys
 
     sys.modules.pop("tomllib", None)
 
@@ -49,7 +45,12 @@ def test_main_reads_defaults_from_config(tmp_path, monkeypatch):
     out = tmp_path / "x.md"
     cfg = tmp_path / "c.toml"
     cfg.write_text(
-        f"format = \"md\"\nurl = \"{audio}\"\nservice = \"whisper\"\noutput = \"{out}\"\n",
+        (
+            'format = "md"\n'
+            f'url = "{audio}"\n'
+            'service = "whisper"\n'
+            f'output = "{out}"\n'
+        ),
         encoding="utf-8",
     )
 
