@@ -6,11 +6,13 @@ import pytest
 def make_fake_whisper(record):
     class FakeModel:
         def transcribe(self, audio_path, language=None, task=None):
-            record["calls"].append({
-                "audio_path": audio_path,
-                "language": language,
-                "task": task,
-            })
+            record["calls"].append(
+                {
+                    "audio_path": audio_path,
+                    "language": language,
+                    "task": task,
+                }
+            )
             # Minimal structure resembling Whisper output
             return {"text": "ok", "segments": []}
 

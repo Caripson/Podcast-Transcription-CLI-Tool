@@ -58,7 +58,9 @@ class WhisperService(TranscriptionService):
                 if primary == "jv":
                     primary = "jw"
                 # Use only if Whisper recognizes it; otherwise None for autodetect
-                norm_lang = primary if (not valid_codes or primary in valid_codes) else None
+                norm_lang = (
+                    primary if (not valid_codes or primary in valid_codes) else None
+                )
         else:
             norm_lang = None
 
