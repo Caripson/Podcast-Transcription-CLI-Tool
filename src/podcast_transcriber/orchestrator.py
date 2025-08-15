@@ -36,10 +36,10 @@ def load_yaml_config(path: str) -> dict:
 def _sanitize_filename(name: str) -> str:
     # Replace characters invalid on Windows/NTFS and problematic in artifacts
     s = str(name)
-    s = re.sub(r'[<>:"/\\|?\r\n*]+', '-', s)
-    s = re.sub(r'\s+', '-', s)
-    s = s.strip(' .-_')
-    return s or 'item'
+    s = re.sub(r'[<>:"/\\|?\r\n*]+', "-", s)
+    s = re.sub(r"\s+", "-", s)
+    s = s.strip(" .-_")
+    return s or "item"
 
 
 def pick_quality_settings(quality: str) -> dict:

@@ -106,11 +106,11 @@ def _podcastindex_by_id(feedid: Optional[str] = None, guid: Optional[str] = None
 
 def _sanitize_slug(name: str) -> str:
     s = (name or "").lower()
-    s = s.replace(' ', '-')
-    s = re.sub(r'[<>:"/\\|?\r\n*]+', '-', s)
-    s = re.sub(r'\s+', '-', s)
-    s = s.strip(' .-_')
-    return s or 'item'
+    s = s.replace(" ", "-")
+    s = re.sub(r'[<>:"/\\|?\r\n*]+', "-", s)
+    s = re.sub(r"\s+", "-", s)
+    s = s.strip(" .-_")
+    return s or "item"
 
 
 def _lower_list(vals: list[str | None]) -> list[str]:
@@ -315,7 +315,9 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
             ep = {
                 "feed": name,
                 "title": title,
-                "slug": _sanitize_slug(title)[:60] if title else _sanitize_slug(f"{name}-ep"),
+                "slug": _sanitize_slug(title)[:60]
+                if title
+                else _sanitize_slug(f"{name}-ep"),
                 "source": media_url,
                 "guid": guid or link,
                 "created_at": datetime.now(timezone.utc).isoformat(),
