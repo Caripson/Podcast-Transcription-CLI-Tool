@@ -81,6 +81,12 @@ pip install -e .[gcp]
 pip install -e .[export]
 ```
 
+## Formatting & Linting
+
+- Formatter: Ruff (via `make fmt` / `make fmt-check`).
+- Linter: Ruff (via `make lint` / `make lint-fix`).
+- Optional: Black config exists for local use, but CI and Make targets use Ruff.
+
 ## Docker
 
 Build a minimal image (choose extras via build-arg). By default, we include useful runtime extras: `export,templates,ingest,orchestrator,env`. For Whisper (heavy), add `whisper` explicitly.

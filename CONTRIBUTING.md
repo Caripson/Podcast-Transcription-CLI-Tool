@@ -18,12 +18,20 @@ pip install -e .[dev]
 - Tests: `pytest -q` (single file: `pytest tests/test_cli.py -q`)
 - Smoke: `chmod +x scripts/smoke.sh && ./scripts/smoke.sh`
 
+## Formatting & Linting
+
+- Use Ruff as both formatter and linter.
+  - Format: `make fmt` (check: `make fmt-check`)
+  - Lint: `make lint` (auto-fix: `make lint-fix`)
+- Black config remains for optional local usage, but CI uses Ruff.
+
 ## Branch, Commits, Style
 
 - Branch naming: `feature/<short-topic>` or `fix/<short-topic>`.
 - Commits: imperative mood; optional scope (e.g., `cli:`). Keep concise and focused.
   - Examples: `cli: add --gcp-longrunning flag`, `exporters: fix EPUB theme path`.
 - Style: Python 3.9+, PEP 8 (4 spaces). Prefer type hints in public APIs. Keep CLI thin; put logic in `src/podcast_transcriber/` modules. Services are pluggable via entry points.
+  - Run `make fmt-check` and `make lint` before opening a PR.
 
 ## Pull Requests
 
