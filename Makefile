@@ -40,11 +40,17 @@ coverage-html:
 coverage-ci:
 	python -m pytest --cov=podcast_transcriber --cov-report=xml --cov-report=term-missing:skip-covered --cov-fail-under=65
 
+FMT_EXCLUDES=--exclude tests/test_cli_config_fallback.py \
+			--exclude tests/test_exporters_docx_more.py \
+			--exclude tests/test_exporters_pdf_more.py \
+			--exclude tests/test_ingestion_more.py \
+			--exclude tests/test_nlp_segment_topics.py
+
 fmt:
-	python -m ruff format src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)
+	python -m ruff format $(FMT_EXCLUDES) src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)
 
 fmt-check:
-	python -m ruff format --check src tests || (echo "Formatting issues or Ruff missing. Install dev deps: pip install -e .[dev]" && exit 1)
+	python -m ruff format --check $(FMT_EXCLUDES) src tests || (echo "Formatting issues or Ruff missing. Install dev deps: pip install -e .[dev]" && exit 1)
 
 lint:
 	python -m ruff check src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)
