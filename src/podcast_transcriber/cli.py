@@ -377,7 +377,8 @@ def main(argv=None) -> int:
                 setattr(args, key, cfg[key])
 
     # Validate essentials unless interactive already ensured them
-    if not args.url:
+    # Allow batch mode (--input-file) without --url
+    if not args.url and not args.input_file:
         raise SystemExit("--url is required (or use --interactive)")
     if not args.service:
         raise SystemExit("--service is required (or use --interactive)")

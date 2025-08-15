@@ -673,25 +673,25 @@ def export_book(
             node.content = "\n".join(parts)
             book.add_item(node)
             epub_chapters.append(node)
-    book.toc = tuple(epub_chapters)
-    try:
-        book.add_item(epub.EpubNav())
-    except Exception:
+        book.toc = tuple(epub_chapters)
         try:
-            book.add_item(epub.EpubNavi())
+            book.add_item(epub.EpubNav())
         except Exception:
-            pass
-    try:
-        book.add_item(epub.EpubNcx())
-    except Exception:
+            try:
+                book.add_item(epub.EpubNavi())
+            except Exception:
+                pass
         try:
-            book.add_item(epub.EpubNCX())
+            book.add_item(epub.EpubNcx())
         except Exception:
-            pass
+            try:
+                book.add_item(epub.EpubNCX())
+            except Exception:
+                pass
         book.spine = ["nav", *epub_chapters]
         epub.write_epub(out_path, book)
         return
-    if fmt == "docx":
+    elif fmt == "docx":
         try:
             import docx  # type: ignore
         except Exception as e:
@@ -737,7 +737,7 @@ def export_book(
             d.add_page_break()
         d.save(out_path)
         return
-    if fmt in {"md", "txt"}:
+    elif fmt in {"md", "txt"}:
         lines = []
         if title:
             if fmt == "md":
@@ -758,7 +758,7 @@ def export_book(
             lines.append(str(ch.get("text", "")).strip())
         Path(out_path).write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
         return
-    if fmt == "pdf":
+    elif fmt == "pdf":
         # Very simple PDF: chapters separated with headings
         try:
             from fpdf import FPDF  # type: ignore
@@ -790,7 +790,8 @@ def export_book(
                 pdf.add_page()
         pdf.output(out_path)
         return
-    raise ValueError(f"Unsupported book format: {fmt}")
+    else:
+        raise ValueError(f"Unsupported book format: {fmt}")
 
 
 def _export_kindle(
