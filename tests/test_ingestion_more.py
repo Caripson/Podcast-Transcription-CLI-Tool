@@ -25,9 +25,7 @@ def test_discover_new_episodes_podcastindex_items(monkeypatch):
             }
         ]
     }
-    monkeypatch.setattr(
-        ing, "_podcastindex_by_id", lambda **kw: pi
-    )
+    monkeypatch.setattr(ing, "_podcastindex_by_id", lambda **kw: pi)
 
     class Store:
         def __init__(self):
@@ -71,3 +69,4 @@ def test_discover_new_episodes_feedparser_fallback(monkeypatch):
     cfg = {"feeds": [{"name": "F", "url": "https://ex/rss.xml"}]}
     eps = ing.discover_new_episodes(cfg, Store())
     assert len(eps) == 1 and eps[0]["image"].endswith("cover.jpg")
+
