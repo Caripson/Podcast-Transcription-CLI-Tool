@@ -13,22 +13,24 @@ set -euo pipefail
 IMAGE_TAG="podcast-transcriber:latest"
 DOCKERFILE="Dockerfile"
 OUT_DIR="$(pwd)/out-cli"
-REBUILD=0
+REBUILD=1
 CACHE_DIR="$(pwd)/.e2e-cache"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --rebuild) REBUILD=1; shift ;;
+    --no-rebuild) REBUILD=0; shift ;;
     --image) IMAGE_TAG="$2"; shift 2 ;;
     --dockerfile) DOCKERFILE="$2"; shift 2 ;;
     -o|--out) OUT_DIR="$(realpath -m "$2")"; shift 2 ;;
     -h|--help)
-      echo "Usage: $0 [--rebuild] [--dockerfile Dockerfile|Dockerfile.calibre] [--image tag] [-o outdir]"; exit 0 ;;
+      echo "Usage: $0 [--rebuild|--no-rebuild] [--dockerfile Dockerfile|Dockerfile.calibre] [--image tag] [-o outdir]"; exit 0 ;;
   *) echo "Unknown arg: $1"; exit 1 ;;
   esac
 done
 
 # In CI environments, default to rebuild to avoid stale images
+# In CI environments, keep rebuild enabled by default (no-op if already 1)
 if [[ $REBUILD -eq 0 ]]; then
   if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
     REBUILD=1
