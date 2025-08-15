@@ -1,7 +1,3 @@
-from pathlib import Path
-from types import SimpleNamespace
-from unittest import mock
-
 import podcast_transcriber.cli as cli
 
 
@@ -9,12 +5,15 @@ def test_load_config_uses_tomli_fallback(tmp_path, monkeypatch):
     # Create a minimal TOML config
     cfg = tmp_path / "conf.toml"
     cfg.write_text(
-        """
-format = "md"
-url = "X:/dummy.wav"
-service = "whisper"
-output = "{out}"
-""".format(out=str(tmp_path / "o.md")),
+        "\n".join(
+            [
+                "format = \"md\"",
+                "url = \"X:/dummy.wav\"",
+                "service = \"whisper\"",
+                f"output = \"{str(tmp_path / 'o.md')}\"",
+                "",
+            ]
+        ),
         encoding="utf-8",
     )
 
