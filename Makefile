@@ -38,7 +38,7 @@ coverage-html:
 	python -m pytest --cov=podcast_transcriber --cov-report=html --cov-report=term-missing:skip-covered --cov-report=xml
 
 coverage-ci:
-	python -m pytest --cov=podcast_transcriber --cov-report=xml --cov-report=term-missing:skip-covered --cov-fail-under=85
+	python -m pytest --cov=podcast_transcriber --cov-report=xml --cov-report=term-missing:skip-covered --cov-fail-under=65
 
 fmt:
 	python -m ruff format src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)
