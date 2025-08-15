@@ -1,7 +1,5 @@
 import sys
 
-import pytest
-
 
 def make_fake_whisper(record):
     class FakeModel:
