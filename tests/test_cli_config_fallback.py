@@ -7,11 +7,12 @@ import podcast_transcriber.cli as cli
 def test_load_config_uses_tomli_fallback(tmp_path, monkeypatch):
     # Create a minimal TOML config
     cfg = tmp_path / "conf.toml"
+    dest = tmp_path / "o.md"
     cfg_text = (
         "format = \"md\"\n"
         "url = \"X:/dummy.wav\"\n"
         "service = \"whisper\"\n"
-        f"output = \"{tmp_path / 'o.md'}\"\n"
+        f"output = \"{dest}\"\n"
     )
     cfg.write_text(cfg_text, encoding="utf-8")
 
