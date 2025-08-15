@@ -56,7 +56,10 @@ def test_epub_splits_chapters_from_segments(tmp_path, monkeypatch):
                 it.file_name for it in book.items if isinstance(it, FakeHtml)
             ]
             # at least one transcript or section file present
-            assert any(f.startswith("section_") or f == "transcript.xhtml" for f in chapter_files)
+            assert any(
+                f.startswith("section_") or f == "transcript.xhtml"
+                for f in chapter_files
+            )
             Path(path).write_bytes(b"EPUB")
 
     import sys
@@ -70,5 +73,12 @@ def test_epub_splits_chapters_from_segments(tmp_path, monkeypatch):
         {"start": 10.0, "end": 11.0, "text": "C"},
     ]
 
-    export_transcript("hello", str(out), "epub", title="T", author="A", segments=segments)
+    export_transcript(
+        "hello",
+        str(out),
+        "epub",
+        title="T",
+        author="A",
+        segments=segments,
+    )
     assert out.exists()
