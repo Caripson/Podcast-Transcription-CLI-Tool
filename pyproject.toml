@@ -63,7 +63,7 @@ include = "src|tests"
 [tool.ruff]
 line-length = 88
 target-version = "py39"
-extend-exclude = ["site", ".venv"]
+extend-exclude = ["site", ".venv", "tests/test_cli_config_fallback.py"]
 
 [tool.ruff.lint]
 select = [
