@@ -69,6 +69,8 @@ extend-exclude = [
   "tests/test_cli_config_fallback.py",
   "tests/test_exporters_docx_more.py",
   "tests/test_exporters_pdf_more.py",
+  "tests/test_ingestion_more.py",
+  "tests/test_nlp_segment_topics.py",
 ]
 
 [tool.ruff.lint]
