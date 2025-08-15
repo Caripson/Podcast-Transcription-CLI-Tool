@@ -8,6 +8,8 @@ Badges
 - Docs: [![Docs](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml)
 - PyPI: [![PyPI - Test](https://img.shields.io/badge/PyPI-test-brightgreen)](https://pypi.org/project/podcast-transcriber/)
 - Smoke: [![Smoke](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/smoke.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/smoke.yml)
+- E2E: [![E2E](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/e2e.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/e2e.yml)
+- E2E Nightly: [![E2E Nightly](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/e2e-nightly.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/e2e-nightly.yml)
 - Version: ![Version](https://img.shields.io/badge/version-1.4.2-blue)
 
 ## Features

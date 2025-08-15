@@ -1,0 +1,72 @@
+name: E2E Nightly
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # daily at 02:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-image:
+    name: Build Calibre Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        run: echo "tag=podcast-transcriber:calibre-nightly" >> "$GITHUB_OUTPUT"
+      - name: Build Docker image (Calibre)
+        run: docker build -f Dockerfile.calibre -t podcast-transcriber:calibre-nightly .
+
+  e2e-standard:
+    name: Orchestrator E2E (standard)
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure scripts executable
+        run: chmod +x scripts/e2e_docker.sh || true
+      - name: Run E2E (standard)
+        run: |
+          ./scripts/e2e_docker.sh \
+            -c examples/recipes/oxford_cc.yml \
+            -n 2 \
+            --fresh-state \
+            --dockerfile Dockerfile.calibre \
+            --image podcast-transcriber:calibre-nightly
+      - name: Upload artifacts (standard)
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-nightly-standard
+          path: out
+          if-no-files-found: warn
+          retention-days: 5
+
+  e2e-premium:
+    name: Orchestrator E2E (premium)
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure scripts executable
+        run: chmod +x scripts/e2e_docker.sh || true
+      - name: Run E2E (premium)
+        run: |
+          ./scripts/e2e_docker.sh \
+            -c examples/recipes/oxford_premium.yml \
+            -n 1 \
+            --fresh-state \
+            --dockerfile Dockerfile.calibre \
+            --image podcast-transcriber:calibre-nightly
+      - name: Upload artifacts (premium)
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-nightly-premium
+          path: out
+          if-no-files-found: warn
+          retention-days: 5
+
