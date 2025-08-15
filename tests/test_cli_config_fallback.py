@@ -9,10 +9,7 @@ def test_load_config_uses_tomli_fallback(tmp_path, monkeypatch):
     cfg = tmp_path / "conf.toml"
     dest = tmp_path / "o.md"
     cfg_text = (
-        "format = \"md\"\n"
-        "url = \"X:/dummy.wav\"\n"
-        "service = \"whisper\"\n"
-        f"output = \"{dest}\"\n"
+        f'format = "md"\nurl = "X:/dummy.wav"\nservice = "whisper"\noutput = "{dest}"\n'
     )
     cfg.write_text(cfg_text, encoding="utf-8")
 
@@ -47,12 +44,7 @@ def test_main_reads_defaults_from_config(tmp_path, monkeypatch):
     out = tmp_path / "x.md"
     cfg = tmp_path / "c.toml"
     cfg.write_text(
-        (
-            "format = \"md\"\n"
-            f"url = \"{audio}\"\n"
-            "service = \"whisper\"\n"
-            f"output = \"{out}\"\n"
-        ),
+        (f'format = "md"\nurl = "{audio}"\nservice = "whisper"\noutput = "{out}"\n'),
         encoding="utf-8",
     )
 
