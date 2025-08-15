@@ -1,0 +1,57 @@
+name: E2E
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-quick:
+    name: E2E Quick (Calibre)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure scripts executable
+        run: |
+          chmod +x scripts/e2e_docker.sh scripts/e2e_cli_matrix.sh || true
+
+      - name: Build Calibre Docker image
+        run: |
+          docker build -f Dockerfile.calibre -t podcast-transcriber:calibre .
+
+      - name: Run Orchestrator E2E (quick recipe)
+        run: |
+          ./scripts/e2e_docker.sh \
+            -c examples/recipes/oxford_quick.yml \
+            -n 2 \
+            --fresh-state \
+            --dockerfile Dockerfile.calibre \
+            --image podcast-transcriber:calibre
+
+      - name: Run CLI E2E matrix (all formats)
+        run: |
+          ./scripts/e2e_cli_matrix.sh \
+            --dockerfile Dockerfile.calibre \
+            --image podcast-transcriber:calibre
+
+      - name: Upload orchestrator artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-out
+          path: out
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload CLI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-out-cli
+          path: out-cli
+          if-no-files-found: warn
+          retention-days: 7
+
