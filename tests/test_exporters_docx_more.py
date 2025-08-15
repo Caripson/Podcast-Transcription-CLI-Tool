@@ -9,17 +9,26 @@ def test_docx_cover_first_and_footer(tmp_path, monkeypatch):
     cover = tmp_path / "c.jpg"
     cover.write_bytes(b"JPG")
 
+    class FakeRun:
+        def __init__(self):
+            self._r = []
+
+    class FakeParagraph:
+        def add_run(self, text=None):  # text ignored
+            return FakeRun()
+
+    class FakeFooter:
+        def __init__(self):
+            self.paragraphs = []
+
+        def add_paragraph(self):
+            p = FakeParagraph()
+            self.paragraphs.append(p)
+            return p
+
     class FakeSection:
         def __init__(self):
-            class Footer:
-                def __init__(self):
-                    self.paragraphs = []
-
-                def add_paragraph(self):
-                    self.paragraphs.append(type("P", (), {"add_run": lambda self, x=None: type("R", (), {"_r": []})()})())
-                    return self.paragraphs[-1]
-
-            self.footer = Footer()
+            self.footer = FakeFooter()
 
     class FakeDoc:
         def __init__(self):

@@ -61,7 +61,8 @@ def test_pdf_custom_font_and_header_footer(tmp_path, monkeypatch):
         pdf_footer="Foot",
     )
     assert out.exists()
-    assert calls["add_font"] and calls["add_font"][0][0] == "Embedded"
+    assert calls["add_font"]
+    assert calls["add_font"][0][0] == "Embedded"
 
 
 def test_pdf_font_file_missing_raises(tmp_path, monkeypatch):
