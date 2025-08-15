@@ -481,6 +481,7 @@ def _export_docx(
             "DOCX export requires 'python-docx'. Install with: pip install python-docx or pip install podcast-transcriber[docx]"
         ) from e
     doc = docx.Document()
+
     # Helper to add cover page
     def _add_cover(tmp_path: str):
         doc.add_page_break()
@@ -664,7 +665,9 @@ def export_book(
             ]
             for para in str(ch.get("text", "")).split("\n\n"):
                 parts.append(
-                    "<p>" + "<br/>".join(html.escape(p) for p in para.splitlines()) + "</p>"
+                    "<p>"
+                    + "<br/>".join(html.escape(p) for p in para.splitlines())
+                    + "</p>"
                 )
             parts.append("</body>")
             node.content = "\n".join(parts)

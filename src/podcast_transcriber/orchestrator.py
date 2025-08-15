@@ -274,7 +274,9 @@ def cmd_process(args) -> int:
             except Exception:
                 pass
         # Append attribution chapter (visible in EPUB/MD and part of composed text)
-        attribution = "Generated with Podcast-Transcription-CLI, developed by Johan Caripson."
+        attribution = (
+            "Generated with Podcast-Transcription-CLI, developed by Johan Caripson."
+        )
         try:
             chapters.append(Chapter("Attribution", attribution))
         except Exception:
@@ -446,9 +448,7 @@ def cmd_process(args) -> int:
             # Default single EPUB path + optional Markdown
             out_path = out_dir / f"{base}.epub"
             export_book(
-                chapters=[
-                    {"title": ch.title, "text": ch.text} for ch in doc.chapters
-                ],
+                chapters=[{"title": ch.title, "text": ch.text} for ch in doc.chapters],
                 out_path=str(out_path),
                 fmt="epub",
                 title=doc.title,
@@ -474,7 +474,8 @@ def cmd_process(args) -> int:
                             "topics": [ch.title for ch in doc.chapters],
                             "takeaways": res.get("takeaways"),
                             "chapters": [
-                                {"title": ch.title, "text": ch.text} for ch in doc.chapters
+                                {"title": ch.title, "text": ch.text}
+                                for ch in doc.chapters
                             ],
                         },
                     )

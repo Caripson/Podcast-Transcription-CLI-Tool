@@ -219,7 +219,11 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
             # Prefer PodcastIndex when API creds present; fall back to feedparser
             pi = _try_podcastindex(url)
         entries = []
-        categories_filter = _lower_list(f.get("categories", []) if isinstance(f.get("categories"), (list, tuple)) else [f.get("categories")])
+        categories_filter = _lower_list(
+            f.get("categories", [])
+            if isinstance(f.get("categories"), (list, tuple))
+            else [f.get("categories")]
+        )
         feed_categories: list[str] = []
         if pi and isinstance(pi, dict) and pi.get("items"):
             for it in pi.get("items", []):
@@ -230,8 +234,12 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
                         "link": it.get("link"),
                         "enclosureUrl": it.get("enclosureUrl")
                         or it.get("enclosure_url"),
-                        "categories": list(it.get("categories", {}).values()) if isinstance(it.get("categories"), dict) else it.get("categories"),
-                        "image": (it.get("image") or it.get("imageUrl") or it.get("image_url")),
+                        "categories": list(it.get("categories", {}).values())
+                        if isinstance(it.get("categories"), dict)
+                        else it.get("categories"),
+                        "image": (
+                            it.get("image") or it.get("imageUrl") or it.get("image_url")
+                        ),
                         "description": it.get("description"),
                     }
                 )
@@ -292,8 +300,8 @@ def discover_new_episodes(config: dict, store) -> list[dict[str, Any]]:
                 cats = _entry_categories(entry, feed_categories)
                 if not any(c in cats for c in categories_filter):
                     continue
-            image_url = _entry_image(entry, parsed if 'parsed' in locals() else None)
-            desc = _entry_description(entry, parsed if 'parsed' in locals() else None)
+            image_url = _entry_image(entry, parsed if "parsed" in locals() else None)
+            desc = _entry_description(entry, parsed if "parsed" in locals() else None)
             ep = {
                 "feed": name,
                 "title": title,
