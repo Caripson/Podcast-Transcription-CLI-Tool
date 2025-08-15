@@ -79,7 +79,6 @@ for fmt in "${FORMATS[@]}"; do
     -v "$OUT_DIR":/out \
     -v "$CACHE_DIR":/root/.cache \
     "$IMAGE_TAG" \
-    podcast-transcriber \
       --url /workspace/tone.wav \
       --service whisper \
       --format "$fmt" \
@@ -93,7 +92,6 @@ docker run --rm \
   -v "$OUT_DIR":/out \
   -v "$CACHE_DIR":/root/.cache \
   "$IMAGE_TAG" \
-  podcast-transcriber \
     --service whisper \
     --input-file /out/list.txt \
     --combine-into /out/combined.epub \
