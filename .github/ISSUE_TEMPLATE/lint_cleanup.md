@@ -1,30 +1,29 @@
 ---
 name: "Chore: Lint/Format Cleanup"
-about: Track Ruff/Black cleanup in phases to keep diffs reviewable
+about: Track Ruff formatter + linter cleanup in phases to keep diffs reviewable
 labels: ["chore", "tech-debt"]
 ---
 
 ## Summary
-Adopt consistent formatting (Black) and linting (Ruff) across the repo. Execute in small, low-risk phases.
+Adopt consistent formatting (Ruff formatter) and linting (Ruff) across the repo. Execute in small, low‑risk phases. Black is optional and may be kept for local preference, but CI and Make targets use Ruff.
 
 ## Context
-- Config: see `pyproject.toml` for `[tool.black]` and `[tool.ruff]`.
-- Make targets: `make fmt`, `make fmt-check`, `make lint`, `make lint-fix`.
+- Config: see `pyproject.toml` for `[tool.ruff]` (and `[tool.black]` kept for optional local use).
+- Make targets: `make fmt`/`make fmt-check` (Ruff format), `make lint`/`make lint-fix` (Ruff check).
 
 ## Plan (Phased)
-- [x] Phase 0: Add config + Makefile targets (fmt/lint); PR includes AGENTS.md updates.
-- [x] Phase 1: Format tests and utils only (ruff format) and apply safe fixes (`ruff check --fix`).
+- [x] Phase 0: Confirm config + Makefile targets (fmt/lint); update AGENTS.md/README if needed.
+- [x] Phase 1: Format tests and utils (Ruff format) and apply safe fixes (`ruff check --fix`).
 - [ ] Phase 2: Import order fixes (I001) across `src/` (no behavior changes).
-- [ ] Phase 3: Long lines (E501): wrap or split; limited `# noqa: E501` allowed for URLs/strings.
-- [ ] Phase 4: Modern typing upgrades (UP006/UP035) across `src/`.
-- [ ] Phase 5: Remaining fixables (F401 unused imports, minor style) with `--fix` and small manual touches.
+- [ ] Phase 3: Long lines (E501): selectively wrap/split; allow limited `# noqa: E501` for URLs/strings; E501 remains ignored globally for now.
+- [ ] Phase 4: Modern typing upgrades (UP006/UP035) across `src/` where safe.
+- [ ] Phase 5: Remaining fixables (e.g., F401 unused imports, minor style) with `--fix` and small manual changes.
 
 ## Acceptance Criteria
 - `make fmt-check` passes.
 - `make lint` shows no errors for the targeted phase paths.
-- `make test` remains green after each phase.
+- Tests remain green (`pytest -q`) after each phase.
 
 ## Notes
 - Avoid refactors while cleaning style. Keep diffs mechanical and scoped.
-- If a rule causes noisy changes, propose narrowing or ignoring per-file.
-
+- If any rule causes noisy changes, propose narrowing scope or adding per-file ignores.
