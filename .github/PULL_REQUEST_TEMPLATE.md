@@ -11,9 +11,11 @@
 - Setup: `python -m venv .venv && source .venv/bin/activate && pip install -e .[dev]`
 - Run: `pytest -q` (or `pytest tests/test_<area>.py -q`)
 - Optional smoke: `chmod +x scripts/smoke.sh && ./scripts/smoke.sh`
+ - Format/Lint (Ruff): `make fmt-check` and `make lint` (auto-fix: `make lint-fix`)
 
 ## Checklist
 - [ ] Tests pass locally (`pytest -q`).
+- [ ] Formatting and lint pass (`make fmt-check`, `make lint`).
 - [ ] Added/updated tests for new behavior.
 - [ ] Updated docs/README/examples for user‑facing flags or outputs.
 - [ ] No secrets committed; `.env` and credentials excluded.
