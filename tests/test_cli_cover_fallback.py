@@ -14,10 +14,10 @@ def test_cli_cover_fallback_requests_used(tmp_path, monkeypatch):
     audio.write_bytes(b"RIFF..")
     out = tmp_path / "t.epub"
 
-    # Return LocalAudioPath with cover_url set
+    # Return LocalAudioPath with embedded cover bytes (no network)
     def fake_ensure(src):
         lp = LocalAudioPath(str(audio), is_temp=False)
-        lp.cover_url = "https://example.com/cover.jpg"
+        lp.cover_image_bytes = b"COVERBYTES"
         return lp
 
     monkeypatch.setattr(
@@ -27,15 +27,7 @@ def test_cli_cover_fallback_requests_used(tmp_path, monkeypatch):
         "podcast_transcriber.services.get_service", lambda name: DummySvc()
     )
 
-    # Fake requests.get used by CLI to fetch cover bytes
-    class Resp:
-        def __init__(self):
-            self.content = b"COVERBYTES"
-
-        def raise_for_status(self):
-            return None
-
-    monkeypatch.setattr("requests.get", lambda *a, **k: Resp(), raising=False)
+    # No network call needed when bytes are already present
 
     captured = {}
 

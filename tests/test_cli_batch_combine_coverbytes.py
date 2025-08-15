@@ -16,12 +16,12 @@ def test_cli_batch_combine_cover_bytes_from_cover_url(tmp_path, monkeypatch):
     lst = tmp_path / "list.txt"
     lst.write_text(f"{a1}\n{a2}\n", encoding="utf-8")
 
-    # ensure_local_audio returns LocalAudioPath with cover_url
+    # ensure_local_audio returns LocalAudioPath with embedded cover bytes (no network)
     from podcast_transcriber.utils.downloader import LocalAudioPath
 
     def fake_ensure(s):
         lp = LocalAudioPath(str(s), is_temp=False)
-        lp.cover_url = "https://example.com/c.jpg"
+        lp.cover_image_bytes = b"COV"
         return lp
 
     monkeypatch.setattr(
@@ -31,15 +31,7 @@ def test_cli_batch_combine_cover_bytes_from_cover_url(tmp_path, monkeypatch):
         "podcast_transcriber.services.get_service", lambda name: DummyService()
     )
 
-    # Fake requests.get to supply cover bytes
-    class Resp:
-        def __init__(self):
-            self.content = b"COV"
-
-        def raise_for_status(self):
-            return None
-
-    monkeypatch.setattr("requests.get", lambda *a, **k: Resp(), raising=False)
+    # No network call needed when bytes are already present
 
     captured = {}
 
