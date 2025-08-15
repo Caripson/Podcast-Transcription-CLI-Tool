@@ -34,7 +34,7 @@ def test_cli_cover_fallback_requests_used(tmp_path, monkeypatch):
 
         def raise_for_status(self):
             return None
-    
+
     monkeypatch.setattr("requests.get", lambda *a, **k: Resp(), raising=False)
 
     captured = {}
