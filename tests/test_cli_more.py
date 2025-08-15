@@ -1,6 +1,6 @@
 import io
-from pathlib import Path
 from unittest import mock
+import pytest
 
 import podcast_transcriber.cli as cli
 
@@ -34,7 +34,7 @@ def test_cli_theme_unknown_raises(tmp_path, monkeypatch):
         "podcast_transcriber.services.get_service", lambda name: DummyService()
     )
 
-    try:
+    with pytest.raises(SystemExit) as e:
         cli.main(
             [
                 "--url",
@@ -49,9 +49,7 @@ def test_cli_theme_unknown_raises(tmp_path, monkeypatch):
                 "does-not-exist",
             ]
         )
-        assert False, "Expected SystemExit for unknown theme"
-    except SystemExit as e:
-        assert e.code is not None
+    assert e.value.code is not None
 
 
 def test_cli_cache_hit_bypasses_transcribe(tmp_path, monkeypatch):
