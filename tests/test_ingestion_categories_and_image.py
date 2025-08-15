@@ -12,7 +12,10 @@ def test_discover_categories_and_image(monkeypatch):
         summary="Desc",
         itunes_image={"href": "https://ex/cover.jpg"},
     )
-    parsed = SimpleNamespace(feed=SimpleNamespace(tags=[SimpleNamespace(term="Creative Commons")]), entries=[entry])
+    parsed = SimpleNamespace(
+        feed=SimpleNamespace(tags=[SimpleNamespace(term="Creative Commons")]),
+        entries=[entry],
+    )
 
     def fake_load(url):
         return parsed
@@ -44,4 +47,3 @@ def test_discover_categories_and_image(monkeypatch):
     assert ep.get("image")
     assert "creative commons" in [c.lower() for c in ep.get("categories", [])]
     assert ep.get("description") == "Desc"
-
