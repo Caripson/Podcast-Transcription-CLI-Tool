@@ -20,9 +20,18 @@ jobs:
         run: |
           chmod +x scripts/e2e_docker.sh scripts/e2e_cli_matrix.sh || true
 
-      - name: Build Calibre Docker image
-        run: |
-          docker build -f Dockerfile.calibre -t podcast-transcriber:calibre .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Calibre Docker image (cached)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.calibre
+          tags: podcast-transcriber:calibre
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Run Orchestrator E2E (quick recipe)
         run: |
@@ -54,4 +63,3 @@ jobs:
           path: out-cli
           if-no-files-found: warn
           retention-days: 7
-

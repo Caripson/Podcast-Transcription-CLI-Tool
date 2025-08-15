@@ -10,63 +10,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-image:
-    name: Build Calibre Image
+  e2e-matrix:
+    name: Orchestrator E2E (${{ matrix.name }})
     runs-on: ubuntu-latest
-    outputs:
-      image-tag: ${{ steps.tag.outputs.tag }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: tag
-        run: echo "tag=podcast-transcriber:calibre-nightly" >> "$GITHUB_OUTPUT"
-      - name: Build Docker image (Calibre)
-        run: docker build -f Dockerfile.calibre -t podcast-transcriber:calibre-nightly .
-
-  e2e-standard:
-    name: Orchestrator E2E (standard)
-    needs: build-image
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: standard
+            recipe: examples/recipes/oxford_cc.yml
+            n: 2
+          - name: premium
+            recipe: examples/recipes/oxford_premium.yml
+            n: 1
     steps:
       - uses: actions/checkout@v4
       - name: Ensure scripts executable
         run: chmod +x scripts/e2e_docker.sh || true
-      - name: Run E2E (standard)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Calibre Docker image (cached)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.calibre
+          tags: podcast-transcriber:calibre-nightly
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run E2E (${{ matrix.name }})
         run: |
           ./scripts/e2e_docker.sh \
-            -c examples/recipes/oxford_cc.yml \
-            -n 2 \
+            -c ${{ matrix.recipe }} \
+            -n ${{ matrix.n }} \
             --fresh-state \
             --dockerfile Dockerfile.calibre \
             --image podcast-transcriber:calibre-nightly
-      - name: Upload artifacts (standard)
+      - name: Upload artifacts (${{ matrix.name }})
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-nightly-standard
+          name: e2e-nightly-${{ matrix.name }}
           path: out
           if-no-files-found: warn
           retention-days: 5
-
-  e2e-premium:
-    name: Orchestrator E2E (premium)
-    needs: build-image
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Ensure scripts executable
-        run: chmod +x scripts/e2e_docker.sh || true
-      - name: Run E2E (premium)
-        run: |
-          ./scripts/e2e_docker.sh \
-            -c examples/recipes/oxford_premium.yml \
-            -n 1 \
-            --fresh-state \
-            --dockerfile Dockerfile.calibre \
-            --image podcast-transcriber:calibre-nightly
-      - name: Upload artifacts (premium)
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-nightly-premium
-          path: out
-          if-no-files-found: warn
-          retention-days: 5
-
