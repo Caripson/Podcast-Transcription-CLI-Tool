@@ -37,6 +37,31 @@ class WhisperService(TranscriptionService):
 
         model = whisper.load_model(self.model_name)
 
+        # Normalize language codes to what Whisper expects (e.g., en-US -> en).
+        # If unsupported after normalization, let Whisper auto-detect by using None.
+        norm_lang: Optional[str] = None
+        if language:
+            try:
+                from whisper.tokenizer import TO_LANGUAGE_CODE  # type: ignore
+
+                valid_codes = set(TO_LANGUAGE_CODE.values())
+            except Exception:
+                valid_codes = set()
+            lang = (language or "").strip().lower().replace("_", "-")
+            if lang in ("auto", "detect", "auto-detect"):
+                norm_lang = None
+            else:
+                # Reduce BCP-47 like en-us, pt-br to primary subtag
+                primary = lang.split("-", 1)[0]
+                # Some common aliases/corrections could go here if needed
+                # e.g., map jv->jw (Javanese) per Whisper's codes
+                if primary == "jv":
+                    primary = "jw"
+                # Use only if Whisper recognizes it; otherwise None for autodetect
+                norm_lang = primary if (not valid_codes or primary in valid_codes) else None
+        else:
+            norm_lang = None
+
         if self.chunk_seconds:
             # Chunk with ffmpeg into temp dir and merge results with offsets
             import os
@@ -72,7 +97,7 @@ class WhisperService(TranscriptionService):
             for chunk in sorted(Path(tempdir).glob("chunk_*.wav")):
                 result = model.transcribe(
                     str(chunk),
-                    language=language,
+                    language=norm_lang,
                     task=("translate" if self.translate else None),
                 )
                 t = (result.get("text") or "").strip()
@@ -112,7 +137,7 @@ class WhisperService(TranscriptionService):
         else:
             result = model.transcribe(
                 audio_path,
-                language=language,
+                language=norm_lang,
                 task=("translate" if self.translate else None),
             )
             text = (result.get("text") or "").strip()

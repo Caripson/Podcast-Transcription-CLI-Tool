@@ -397,6 +397,7 @@ Whisper options
 - `--chunk-seconds N`: Split long audio into chunks.
 - `--translate`: Whisper translate task (to English).
 - `--language`: Hint language code (e.g., `sv`, `en-US`).
+  - Whisper notes: BCP‑47 tags like `en-US` are normalized to primary codes (e.g., `en`). If a provided code is unsupported by Whisper, the service falls back to auto‑detect.
 
 AWS options
 
