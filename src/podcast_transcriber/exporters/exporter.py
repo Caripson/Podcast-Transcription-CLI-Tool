@@ -812,6 +812,16 @@ def _export_kindle(
     fd, tmp_epub = tempfile.mkstemp(prefix="transcript_", suffix=".epub")
     os.close(fd)
     try:
+        # Calibre does not reliably support 'azw' as an output extension in all builds.
+        # Prefer converting to 'azw3' and then write/copy to the requested path when 'azw' is requested.
+        use_ext = target_fmt.lower()
+        tmp_out = None
+        if use_ext == "azw":
+            # Convert to a temp .azw3, then copy to the .azw destination for compatibility
+            fd2, tmp_out = tempfile.mkstemp(prefix="kindle_", suffix=".azw3")
+            os.close(fd2)
+        else:
+            tmp_out = out_path
         _export_epub(
             text,
             tmp_epub,
@@ -821,12 +831,27 @@ def _export_kindle(
             css_file=css_file,
             css_text=css_text,
         )
-        subprocess.run([conv, tmp_epub, out_path], check=True)
+        # Choose destination for conversion
+        dest = tmp_out or out_path
+        subprocess.run([conv, tmp_epub, dest], check=True)
+        if use_ext == "azw":
+            # Copy converted azw3 bytes into expected .azw file name
+            try:
+                data = Path(dest).read_bytes()
+                Path(out_path).write_bytes(data)
+            except Exception:
+                # Best-effort: if copy fails, leave the file absent
+                raise
     finally:
         try:
             Path(tmp_epub).unlink(missing_ok=True)
         except Exception:
             pass
+        if tmp_out and tmp_out != out_path:
+            try:
+                Path(tmp_out).unlink(missing_ok=True)
+            except Exception:
+                pass
 
 
 def _prepare_cover_bytes(path: Path) -> bytes:
