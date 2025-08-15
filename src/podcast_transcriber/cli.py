@@ -397,8 +397,9 @@ def main(argv=None) -> int:
             True if not getattr(args, "normalize", False) else args.normalize
         )
         args.auto_toc = True if not getattr(args, "auto_toc", False) else args.auto_toc
-    # Resolve local path (download if URL)
-    local_path = ensure_local_audio(args.url)
+    # Prepare for optional single-file download path
+    # In batch mode (--input-file), we resolve per-item later.
+    local_path = None
 
     # Default service via registry (keeps tests/monkeypatch simple)
     service = services.get_service(args.service)
@@ -569,6 +570,9 @@ def main(argv=None) -> int:
                     )
             return 0
 
+        # Single-file mode: resolve local path (download if URL)
+        local_path = ensure_local_audio(args.url)
+
         # Simple cache lookup for single-file mode
         text = None
         cache_key = None
@@ -619,14 +623,15 @@ def main(argv=None) -> int:
                     pass
     finally:
         # Clean up temp file if it was created during download
-        if bool(
-            getattr(local_path, "is_temp", False)
-            or getattr(local_path, "_is_temp", False)
-        ):
-            try:
-                Path(local_path).unlink(missing_ok=True)
-            except Exception:
-                pass
+        if local_path is not None:
+            if bool(
+                getattr(local_path, "is_temp", False)
+                or getattr(local_path, "_is_temp", False)
+            ):
+                try:
+                    Path(local_path).unlink(missing_ok=True)
+                except Exception:
+                    pass
 
     # Decide on output behavior
     from .exporters import export_transcript, infer_format_from_path
