@@ -1,14 +1,11 @@
-import importlib
-import pytest
+from pathlib import Path
+
+from podcast_transcriber.templates.render import render_markdown
 
 
-def test_render_markdown_requires_jinja(monkeypatch, tmp_path):
-    # Ensure importing jinja2 fails to exercise the RuntimeError branch
-    # (we only assert the error message, not the import machinery).
-    monkeypatch.setitem(importlib.sys.modules, "jinja2", None)
-    from podcast_transcriber.templates.render import render_markdown
-
+def test_render_markdown(tmp_path, monkeypatch):
     tpl = tmp_path / "t.md.j2"
-    tpl.write_text("Hello", encoding="utf-8")
-    with pytest.raises(RuntimeError):
-        render_markdown(str(tpl), {"x": 1})
+    tpl.write_text("Hello {{ name }}", encoding="utf-8")
+    out = render_markdown(str(tpl), {"name": "World"})
+    assert out.strip() == "Hello World"
+
