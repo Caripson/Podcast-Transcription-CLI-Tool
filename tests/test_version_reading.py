@@ -1,7 +1,6 @@
-import re
 import importlib
+import re
 import sys
-
 
 
 def test_version_regex_fallback(monkeypatch):
