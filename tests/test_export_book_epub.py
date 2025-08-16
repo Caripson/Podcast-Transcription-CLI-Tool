@@ -26,7 +26,8 @@ def test_export_book_epub_with_metadata_and_cover(tmp_path, monkeypatch):
             pass
 
         def set_cover(self, name, data):
-            calls["cover"] = (name, data[:4] if isinstance(data, (bytes, bytearray)) else data)
+            preview = data[:4] if isinstance(data, (bytes, bytearray)) else data
+            calls["cover"] = (name, preview)
 
         def add_item(self, item):
             self.items.append(item)
@@ -75,7 +76,11 @@ def test_export_book_epub_with_metadata_and_cover(tmp_path, monkeypatch):
     sys.modules["ebooklib"] = mock.MagicMock(epub=FakeEpubMod())
     sys.modules["ebooklib.epub"] = FakeEpubMod()
 
-    metadata = {"language": "en", "description": "Desk", "keywords": ["a", "b"]}
+    metadata = {
+        "language": "en",
+        "description": "Desk",
+        "keywords": ["a", "b"],
+    }
 
     export_book(
         chapters,
@@ -95,4 +100,3 @@ def test_export_book_epub_with_metadata_and_cover(tmp_path, monkeypatch):
     assert calls["desc"] == "Desk"
     assert calls["subject"] == "a, b"
     assert calls["cover"] and calls["cover"][0] == "cover.jpg"
-
