@@ -38,7 +38,7 @@ coverage-html:
 	python -m pytest --cov=podcast_transcriber --cov-report=html --cov-report=term-missing:skip-covered --cov-report=xml
 
 coverage-ci:
-	python -m pytest --cov=podcast_transcriber --cov-report=xml --cov-report=term-missing:skip-covered --cov-fail-under=75
+	python -m pytest --cov=podcast_transcriber --cov-report=xml --cov-report=term-missing:skip-covered --cov-fail-under=85
 
 FMT_EXCLUDES=--exclude tests/test_cli_config_fallback.py \
 			--exclude tests/test_exporters_docx_more.py \
