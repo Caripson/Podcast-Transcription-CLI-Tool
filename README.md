@@ -5,6 +5,7 @@ Transcribe podcasts and other audio from a URL or local file. Choose between loc
 Badges
 
 - CI: ![CI](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/ci.yml/badge.svg)
+- Coverage: ![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
 - Lint: [![Ruff](https://img.shields.io/badge/lint-ruff-blue)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/ci.yml)
 - Docs: [![Docs](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml)
 - PyPI: [![PyPI - Test](https://img.shields.io/badge/PyPI-test-brightgreen)](https://pypi.org/project/podcast-transcriber/)
@@ -644,6 +645,7 @@ Your service must implement the `TranscriptionService` interface (see `src/podca
 
 - GitHub Actions runs `pytest` on push/PR (matrix across Python versions and optional extras).
 - MkDocs builds and publishes docs to GitHub Pages (see `.github/workflows/docs.yml`).
+- Test coverage: CI currently green at 85% (local ~87%). Generate locally with `make coverage` (XML + terminal) or `make coverage-html` (HTML in `htmlcov/`). CI enforces a minimum via `--cov-fail-under`.
 
 ## Author
 
