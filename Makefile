@@ -50,7 +50,7 @@ FMT_EXCLUDES=--exclude tests/test_cli_config_fallback.py \
 			--exclude tests/test_services_plugins_bad_factory.py \
 			--exclude tests/test_services_aws_missing_bucket.py \
 			--exclude tests/test_services_plugins_old_api.py \
-			--exclude tests/test_templates_render_error.py
+			--exclude tests/test_templates_render_error.py \
 			--exclude tests/test_orchestrator_load_yaml_errors.py \
 			--exclude tests/test_orchestrator_process_semantic_takeaways.py \
 			--exclude tests/test_orchestrator_quality_and_ingest.py
