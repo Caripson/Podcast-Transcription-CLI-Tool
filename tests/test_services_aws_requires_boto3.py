@@ -1,5 +1,4 @@
 import builtins
-from types import SimpleNamespace
 
 import pytest
 
@@ -22,4 +21,3 @@ def test_aws_transcribe_requires_boto3(monkeypatch, tmp_path):
     svc = AWSTranscribeService()
     with pytest.raises(RuntimeError):
         svc.transcribe(str(audio), language="en-US")
-

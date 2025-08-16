@@ -18,4 +18,3 @@ def test_export_kindle_requires_calibre(monkeypatch, tmp_path):
             css_file=None,
             css_text=None,
         )
-
