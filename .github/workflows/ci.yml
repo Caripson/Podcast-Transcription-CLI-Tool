@@ -8,7 +8,7 @@ on:
 env:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
   PYTHONDONTWRITEBYTECODE: "1"
-  COV_MIN: '65'
+  COV_MIN: '75'
 
 jobs:
   lint-format:
