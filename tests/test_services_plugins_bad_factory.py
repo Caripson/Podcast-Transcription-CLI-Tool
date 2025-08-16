@@ -5,6 +5,7 @@ import pytest
 import podcast_transcriber.services as svc
 
 
+
 def test_plugin_factory_returns_wrong_type(monkeypatch):
     class BadFactory:
         def __call__(self):
@@ -30,4 +31,3 @@ def test_plugin_factory_returns_wrong_type(monkeypatch):
     assert "bad" in [n.lower() for n in names]
     with pytest.raises(TypeError):
         svc.get_service("bad")
-

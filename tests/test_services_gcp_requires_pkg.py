@@ -5,6 +5,7 @@ import pytest
 from podcast_transcriber.services.gcp_speech import GCPSpeechService
 
 
+
 def test_gcp_speech_requires_google_cloud(monkeypatch, tmp_path):
     audio = tmp_path / "a.wav"
     audio.write_bytes(b"RIFF....")
@@ -21,4 +22,3 @@ def test_gcp_speech_requires_google_cloud(monkeypatch, tmp_path):
     svc = GCPSpeechService()
     with pytest.raises(RuntimeError):
         svc.transcribe(str(audio), language="en-US")
-
