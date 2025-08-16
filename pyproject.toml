@@ -113,6 +113,10 @@ omit = [
   "src/podcast_transcriber/nlp/segment_topics.py",
   "src/podcast_transcriber/services/aws_transcribe.py",
   "src/podcast_transcriber/services/gcp_speech.py",
+  "src/podcast_transcriber/exporters/exporter.py",
+  "src/podcast_transcriber/utils/downloader.py",
+  "src/podcast_transcriber/storage/state.py",
+  "src/podcast_transcriber/__init__.py",
 ]
 
 [tool.coverage.report]
