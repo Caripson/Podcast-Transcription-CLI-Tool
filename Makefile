@@ -45,7 +45,9 @@ FMT_EXCLUDES=--exclude tests/test_cli_config_fallback.py \
 			--exclude tests/test_exporters_pdf_more.py \
 			--exclude tests/test_ingestion_more.py \
 			--exclude tests/test_nlp_segment_topics.py \
-			--exclude tests/test_export_book_other_formats.py
+			--exclude tests/test_export_book_other_formats.py \
+			--exclude tests/test_services_gcp_requires_pkg.py \
+			--exclude tests/test_services_plugins_bad_factory.py
 
 fmt:
 	python -m ruff format $(FMT_EXCLUDES) src tests || (echo "Ruff not found. Install dev deps: pip install -e .[dev]" && exit 1)

@@ -72,6 +72,8 @@ extend-exclude = [
   "tests/test_ingestion_more.py",
   "tests/test_nlp_segment_topics.py",
   "tests/test_export_book_other_formats.py",
+  "tests/test_services_gcp_requires_pkg.py",
+  "tests/test_services_plugins_bad_factory.py",
 ]
 
 [tool.ruff.lint]
