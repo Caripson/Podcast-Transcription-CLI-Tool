@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from podcast_transcriber.templates.render import render_markdown
 
 
