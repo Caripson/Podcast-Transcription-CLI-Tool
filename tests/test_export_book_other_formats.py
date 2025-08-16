@@ -6,6 +6,7 @@ import pytest
 from podcast_transcriber.exporters.exporter import export_book
 
 
+
 def test_export_book_docx_with_cover_bytes(tmp_path, monkeypatch):
     out = tmp_path / "book.docx"
 
@@ -98,4 +99,3 @@ def test_export_book_unsupported_raises(tmp_path):
     out = tmp_path / "book.xyz"
     with pytest.raises(ValueError):
         export_book([{"title": "X", "text": "Y"}], str(out), "xyz")
-
