@@ -6,13 +6,21 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-STATE_DIR = Path(
-    os.environ.get(
-        "PODCAST_STATE_DIR", str(Path.home() / ".local/state/podcast_transcriber")
-    )
-)
-STATE_DIR.mkdir(parents=True, exist_ok=True)
-STATE_PATH = STATE_DIR / "state.json"
+# Avoid side effects at import time. Compute preferred dirs lazily and
+# create them only when we actually need to write.
+
+APP_DIR_NAME = "podcast_transcriber"
+ENV_STATE_DIR = "PODCAST_STATE_DIR"
+
+
+def _preferred_state_dir() -> Path:
+    env = os.environ.get(ENV_STATE_DIR)
+    if env:
+        return Path(env)
+    xdg = os.environ.get("XDG_STATE_HOME")
+    if xdg:
+        return Path(xdg) / APP_DIR_NAME
+    return Path.home() / ".local/state" / APP_DIR_NAME
 
 
 def _now_iso() -> str:
@@ -21,19 +29,41 @@ def _now_iso() -> str:
 
 class StateStore:
     def __init__(self):
+        # Start with preferred location, but don't create directories yet.
+        self._state_dir = _preferred_state_dir()
+        self._state_path = self._state_dir / "state.json"
         self._load()
 
-    def _load(self):
-        if STATE_PATH.exists():
+    def _ensure_dir(self) -> None:
+        try:
+            self._state_dir.mkdir(parents=True, exist_ok=True)
+            return
+        except Exception:
+            # Fall back to a workspace-local directory to work in restricted envs/CI
+            fallback = Path.cwd() / ".state" / APP_DIR_NAME
             try:
-                self.state = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+                fallback.mkdir(parents=True, exist_ok=True)
+                self._state_dir = fallback
+                self._state_path = self._state_dir / "state.json"
+                return
+            except Exception:
+                # Last resort: use current directory without subfolder
+                self._state_dir = Path.cwd()
+                self._state_path = self._state_dir / "state.json"
+
+    def _load(self):
+        p = self._state_path
+        if p.exists():
+            try:
+                self.state = json.loads(p.read_text(encoding="utf-8"))
             except Exception:
                 self.state = {"jobs": [], "episodes": [], "seen": {}}
         else:
             self.state = {"jobs": [], "episodes": [], "seen": {}}
 
     def _save(self):
-        STATE_PATH.write_text(
+        self._ensure_dir()
+        self._state_path.write_text(
             json.dumps(self.state, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 

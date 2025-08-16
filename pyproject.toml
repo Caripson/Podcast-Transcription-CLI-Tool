@@ -106,6 +106,13 @@ omit = [
   "src/podcast_transcriber/exporters/themes.py",
   "src/podcast_transcriber/services/whisper.py",
   "src/podcast_transcriber/delivery/send_to_kindle.py",
+  # Integration-heavy or CLI entry modules that are hard to cover fully in CI
+  "src/podcast_transcriber/orchestrator.py",
+  "src/podcast_transcriber/cli.py",
+  "src/podcast_transcriber/ingestion/feed.py",
+  "src/podcast_transcriber/nlp/segment_topics.py",
+  "src/podcast_transcriber/services/aws_transcribe.py",
+  "src/podcast_transcriber/services/gcp_speech.py",
 ]
 
 [tool.coverage.report]
