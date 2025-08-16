@@ -77,6 +77,9 @@ extend-exclude = [
   "tests/test_services_aws_missing_bucket.py",
   "tests/test_services_plugins_old_api.py",
   "tests/test_templates_render_error.py",
+  "tests/test_orchestrator_load_yaml_errors.py",
+  "tests/test_orchestrator_process_semantic_takeaways.py",
+  "tests/test_orchestrator_quality_and_ingest.py",
 ]
 
 [tool.ruff.lint]
