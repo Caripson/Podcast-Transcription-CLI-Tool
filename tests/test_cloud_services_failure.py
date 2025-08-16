@@ -41,11 +41,14 @@ def test_aws_transcribe_failure_path(monkeypatch, tmp_path):
         raise AssertionError("unexpected client")
 
     # Patch boto3
-    monkeypatch.setitem(__import__("sys").modules, "boto3", mock.Mock(client=fake_client))
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "boto3",
+        mock.Mock(client=fake_client),
+    )
 
     svc = AWSTranscribeService()
     with pytest.raises(RuntimeError):
         svc.transcribe(str(audio), language="en-US")
     # Should attempt to delete the temp object on failure
     assert s3_client.delete_object.called
-
