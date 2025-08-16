@@ -10,10 +10,13 @@ nav:
   - Quickstart: usage.md
   - Dependencies: dependencies.md
   - Services: services.md
+  - Whisper Languages: whisper-languages.md
   - Interactive: interactive.md
   - Plugins: plugins.md
   - Examples: examples.md
   - Themes: themes.md
+  - Production Setup: production.md
+  - Orchestrator Config: orchestrator-config.md
   - Troubleshooting: troubleshooting.md
 markdown_extensions:
   - admonition
