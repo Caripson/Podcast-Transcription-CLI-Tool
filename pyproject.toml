@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "podcast-transcriber"
-version = "1.4.2"
+version = "1.4.3"
 description = "CLI tool to transcribe podcasts from a URL using pluggable services (Whisper, AWS, GCP)."
 readme = "README.md"
 requires-python = ">=3.9"

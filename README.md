@@ -8,11 +8,11 @@ Badges
 - Coverage: ![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
 - Lint: [![Ruff](https://img.shields.io/badge/lint-ruff-blue)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/ci.yml)
 - Docs: [![Docs](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/docs.yml)
-- PyPI: [![PyPI - Test](https://img.shields.io/badge/PyPI-test-brightgreen)](https://pypi.org/project/podcast-transcriber/)
+- PyPI: [![PyPI](https://img.shields.io/pypi/v/podcast-transcriber.svg)](https://pypi.org/project/podcast-transcriber/)
 - Smoke: [![Smoke](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/smoke.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/smoke.yml)
 - E2E: [![E2E](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/e2e.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/e2e.yml)
 - E2E Nightly: [![E2E Nightly](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/e2e-nightly.yml/badge.svg)](https://github.com/Caripson/Podcast-Transcription-CLI-Tool/actions/workflows/e2e-nightly.yml)
-- Version: ![Version](https://img.shields.io/badge/version-1.4.2-blue)
+- Version: ![Version](https://img.shields.io/badge/version-1.4.3-blue)
 
 ## Features
 
@@ -47,10 +47,23 @@ Badges
   - YouTube: `yt-dlp`
   - ID3 cover/title: `mutagen` (optional)
 
-Minimal core-only install (one-liner):
+Install from PyPI (core only):
 
 ```bash
-pip install -e .
+pip install podcast-transcriber
+```
+
+Install with extras (examples):
+
+```bash
+# Local Whisper backend (requires ffmpeg on PATH)
+pip install "podcast-transcriber[whisper]"
+
+# Export formats (PDF/EPUB/Kindle)
+pip install "podcast-transcriber[export]"
+
+# Orchestrator + ingestion + templates
+pip install "podcast-transcriber[orchestrator,ingest,templates]"
 ```
 
 Extras quick reference:
@@ -66,7 +79,7 @@ Extras quick reference:
 
 ## Installation
 
-Local (editable) install for development:
+Install from source (editable) for development:
 
 ```bash
 python -m venv .venv
