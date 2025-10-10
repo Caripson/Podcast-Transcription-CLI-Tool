@@ -5,11 +5,8 @@ on:
     branches: [ main, master ]
   pull_request:
 
-permissions:
-  contents: write
-
 jobs:
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,28 +23,12 @@ jobs:
         if: ${{ success() }}
         run: |
           REPO='${{ github.repository }}'
-          OWNER=${REPO%%/*}
-          NAME=${REPO##*/}
-          URL="https://${OWNER}.github.io/${NAME}/"
           {
             echo "### Docs Build";
             echo "- Repository: ${REPO}";
-            echo "- URL: ${URL}";
             echo "- Status: built";
+            echo "- Deployment: skipped (GitHub Pages disabled)";
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
-      - name: Add job summary (deploy)
-        if: ${{ success() }}
-        run: |
-          REPO='${{ github.repository }}'
-          OWNER=${REPO%%/*}
-          NAME=${REPO##*/}
-          URL="https://${OWNER}.github.io/${NAME}/"
-          echo "- Deployed to ${URL}" >> "$GITHUB_STEP_SUMMARY"
   preview:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
