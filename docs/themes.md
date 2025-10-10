@@ -34,6 +34,7 @@ The Markdown exporter supports Jinja2 templates so you can control structure and
 
 Example custom template:
 
+{% raw %}
 ```jinja2
 {% extends 'ebook.md.j2' %}
 
@@ -58,6 +59,7 @@ _by {{ author }}_
 {% endfor %}
 {% endblock %}
 ```
+{% endraw %}
 
 How to use:
 
