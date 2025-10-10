@@ -1,5 +1,5 @@
 # Podcast Transcription CLI Tool
-
+#### Author: Johan Caripson
 Transcribe podcasts and other audio from a URL or local file. Choose between local Whisper, AWS Transcribe, or Google Cloud Speech‑to‑Text. Export transcripts to text, subtitles, and e‑books.
 
 Badges
