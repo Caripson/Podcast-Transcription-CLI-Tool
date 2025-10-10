@@ -353,7 +353,7 @@ markdown_template: ./path/to/ebook.md.j2  # omit to use built-in template
 Templating and themes:
 
 - The built-in template defines blocks you can override: `front_matter`, `title_page`, `preface`, `content`, and `appendix`.
-- Create your own Jinja2 theme that `{% extends %}` the base template at `src/podcast_transcriber/templates/ebook.md.j2`.
+- Create your own Jinja2 theme that starts with {% raw %}`{% extends 'ebook.md.j2' %}`{% endraw %} and overrides the blocks you need.
 - An example template is provided at `examples/templates/ebook_theme_minimal.md.j2`.
 
 Topics and takeaways in Markdown:
